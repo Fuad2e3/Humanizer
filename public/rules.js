@@ -1,6 +1,7 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES } from "./rules-data.js?v=202611080923";
+import { words, spread } from "./text.js?v=202611080926";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES } from "./rules-data.js?v=202611080926";
 
 const MARK = "";   // where something was deleted; tidy() cleans up around it
 const CAP = "";    // capitalize the next letter
@@ -148,4 +149,97 @@ export function tidy(text) {
   t = t.replace(/,(?:[ \t]*,)+/g, ",");
   t = t.replace(new RegExp(`${CAP}([\\s"'“(]*)(\\p{L})`, "gu"), (m, pre, ch) => pre + ch.toUpperCase()).replace(new RegExp(CAP, "g"), "");
   return { text: t, changes: [] };
+}
+
+// ---------- Sentence rhythm ----------
+// People mix short and long sentences. These passes split at a conjunction and merge short neighbours,
+// never adding or dropping a word except "and" in a merge. Bangla sentences are left alone.
+const MERGE_START = /^(The|This|That|It|They|We|You|He|She|There|These|Those)(?![\p{L}])/u;
+const isLatin = (s) => (s.match(/[A-Za-z]/g) || []).length > s.replace(/\s/g, "").length * 0.6;
+const sentencesOf = (p) => p.match(/[^.!?]+(?:[.!?]+["'”’)\]]*|$)[ \t]*/g) || [];
+const capFirst = (s) => s.replace(/\p{L}/u, (c) => c.toUpperCase());
+const lowerFirst = (s) => s.replace(/^(\s*)(\p{L})/u, (m, sp, c) => sp + c.toLowerCase());
+
+// Runs fn on each paragraph, keeping the line breaks between them.
+function perParagraph(text, fn) {
+  const changes = [];
+  const out = text.split(/(\n+)/).map((p, i) => (i % 2 ? p : fn(p, changes))).join("");
+  return { text: out, changes };
+}
+
+const isFlat = (p) => {
+  const lens = sentencesOf(p).filter(isLatin).map(words);
+  return lens.length >= 3 && spread(lens) < 0.45;
+};
+
+// Splits a sentence at ", but", ", so", ", yet", ", and" or ";". Long sentences always split; when the
+// paragraph is flat, some medium ones split too, which makes short, punchy sentences.
+export function splitLong(text, pick, tone = "natural", { flat = false } = {}) {
+  const conj = tone === "formal" || tone === "academic" ? /,\s+(but|so|yet)\s+|;\s+/gi : /,\s+(but|so|yet|and)\s+|;\s+/gi;
+  return perParagraph(text, (p, changes) => {
+    let since = 2;
+    return sentencesOf(p).map((s) => {
+      since++;
+      if (!isLatin(s)) return s;
+      const len = words(s);
+      let best = null;
+      for (const m of s.matchAll(conj)) {
+        const left = words(s.slice(0, m.index)), right = words(s.slice(m.index + m[0].length));
+        if (!best || Math.abs(left - right) < Math.abs(best.left - best.right)) best = { m, left, right };
+      }
+      if (!best) return s;
+      const { m, left, right } = best;
+      const long = len >= 22 && left >= 6 && right >= 6;
+      const medium = flat && len >= 10 && left >= 3 && right >= 3 && since >= 2 && pick([true, false], "split");
+      if (!long && !medium) return s;
+      since = 0;
+      const rest = s.slice(m.index + m[0].length);
+      const joined = s.slice(0, m.index) + ". " + (m[1] ? capFirst(m[1]) + " " + rest : capFirst(rest));
+      changes.push({ type: "split", from: m[0].trim(), to: "." });
+      return joined;
+    }).join("");
+  });
+}
+
+// Merges two neighbouring sentences with ", and" when the second starts with a pronoun or "The".
+export function mergeShort(text, pick, { flat = false } = {}) {
+  return perParagraph(text, (p, changes) => {
+    const ss = sentencesOf(p), out = [];
+    for (let i = 0; i < ss.length; i++) {
+      const cur = ss[i], next = ss[i + 1];
+      if (next && isLatin(cur) && isLatin(next) && /[^.]\.[ \t]*$/.test(cur) && MERGE_START.test(next.trimStart())
+        && !/,\s+and\s/i.test(cur + next)) {
+        const a = words(cur), b = words(next);
+        const short = a <= 7 && b <= 7;
+        const flatPair = flat && a + b <= 28 && a <= 16 && b <= 16 && pick([true, false], "merge");
+        if (short || flatPair) {
+          out.push(cur.trimEnd().replace(/\.$/, "") + ", and " + lowerFirst(next.trimStart()));
+          changes.push({ type: "merge", from: ".", to: ", and" });
+          i++;
+          continue;
+        }
+      }
+      out.push(cur);
+    }
+    return out.join("");
+  });
+}
+
+// Varies sentence length: splits then merges, more freely when every sentence is about the same length.
+export function rhythm(text, pick, tone = "natural") {
+  const changes = [];
+  const out = text.split(/(\n+)/).map((p, i) => {
+    if (i % 2) return p;
+    const flat = isFlat(p);
+    const a = splitLong(p, pick, tone, { flat });
+    const b = mergeShort(a.text, pick, { flat });
+    changes.push(...a.changes, ...b.changes);
+    if (!flat || !isFlat(b.text)) return b.text;
+    // Still flat: split wherever it is allowed, without the coin flip. "formal" leaves out "and",
+    // so the ", and" a merge just added is not split again.
+    const c = splitLong(b.text, (o) => (o.includes(true) ? true : pick(o)), "formal", { flat: true });
+    changes.push(...c.changes);
+    return c.text;
+  }).join("");
+  return { text: out, changes };
 }

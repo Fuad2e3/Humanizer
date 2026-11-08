@@ -113,3 +113,65 @@ test("changes are reported", () => {
   const r = swapWords("We utilize tools.", first);
   assert.deepEqual(r.changes, [{ type: "word", from: "utilize", to: "use" }]);
 });
+
+import { splitLong, mergeShort, rhythm } from "../public/rules.js";
+import { aiScore } from "../public/detect.js";
+import { spread, sentences, words } from "../public/text.js";
+
+const yes = (options) => options.includes(true) ? true : options[0];
+
+test("a long sentence splits at 'but'", () => {
+  const s = "The new library opened downtown last spring with a big party for the whole town, but the parking lot was far too small for the crowds that came every weekend.";
+  const out = splitLong(s, yes).text;
+  assert.equal(sentences(out).length, 2, out);
+  assert.match(out, /\. But the parking lot/);
+});
+
+test("a 15-word sentence without a conjunction does not split", () => {
+  const s = "The new library opened downtown last spring with a big party for the whole town.";
+  assert.equal(splitLong(s, yes).text, s);
+});
+
+test("two short sentences merge", () => {
+  assert.equal(mergeShort("It rained. The road flooded.", yes).text, "It rained, and the road flooded.");
+});
+
+test("a sentence starting with a name is never merged", () => {
+  assert.equal(mergeShort("Dhaka is big. Rahim lives there.", yes).text, "Dhaka is big. Rahim lives there.");
+});
+
+test("sentences on separate lines never merge", () => {
+  assert.equal(mergeShort("It rained.\nThe road flooded.", yes).text, "It rained.\nThe road flooded.");
+});
+
+test("questions are not merged", () => {
+  assert.equal(mergeShort("Is it raining? The road is wet.", yes).text, "Is it raining? The road is wet.");
+});
+
+const FLAT = "The team met on Monday to plan the next product launch carefully. It was a long meeting with many ideas from every department. The designers shared new sketches for the home page and the app. This gave the engineers a clear picture of the work ahead. The marketing group then talked about the budget for the campaign. It looked tight, but everyone agreed to try their best for the launch.";
+
+test("rhythm breaks up a flat paragraph", () => {
+  const before = spread(sentences(FLAT).map(words));
+  for (const seed of [1, 2, 3]) {
+    const out = rhythm(FLAT, makePick(rng(seed))).text;
+    const after = spread(sentences(out).map(words));
+    assert.ok(after > before + 0.15, `seed ${seed}: ${before.toFixed(2)} -> ${after.toFixed(2)}: ${out}`);
+    assert.ok(!aiScore(out).keys.includes("flat"), `seed ${seed} still flat: ${out}`);
+  }
+});
+
+test("rhythm keeps every word", () => {
+  const out = rhythm(FLAT, makePick(rng(1))).text;
+  const bag = (t) => t.toLowerCase().match(/[a-z']+/g).filter((w) => w !== "and").sort().join(" ");
+  assert.equal(bag(out), bag(FLAT));
+});
+
+test("formal tone does not start sentences with And", () => {
+  const s = "The board reviewed the annual report in great detail during the long session, and the members approved every single recommendation without any objection at all.";
+  assert.ok(!/\. And /.test(splitLong(s, yes, "formal").text));
+});
+
+test("rhythm leaves Bangla alone", () => {
+  const bn = "আমরা সোমবার দেখা করেছি। সবাই নতুন পরিকল্পনা নিয়ে কথা বলেছে।";
+  assert.equal(rhythm(bn, makePick(rng(1))).text, bn);
+});
