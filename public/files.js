@@ -1,15 +1,34 @@
-// Reads text from an uploaded .txt, .md or .docx file, all in the browser.
+// Reads text from an uploaded .txt, .md, .docx or .pdf file, all in the browser.
 
-export const ACCEPT = ".txt,.md,.docx,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+export const ACCEPT = ".txt,.md,.docx,.pdf,application/pdf,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const MAX_BYTES = 5 * 1024 * 1024;
 
 export async function readTextFile(file) {
   if (file.size > MAX_BYTES) throw new Error("The file is larger than 5 MB.");
   const name = file.name.toLowerCase();
   if (name.endsWith(".docx")) return docxText(await file.arrayBuffer());
+  if (name.endsWith(".pdf") || file.type === "application/pdf") return pdfText(await file.arrayBuffer());
   if (name.endsWith(".txt") || name.endsWith(".md") || file.type.startsWith("text/")) return (await file.text()).replace(/\r\n/g, "\n");
   if (name.endsWith(".doc")) throw new Error("Old .doc files are not supported. Open it in Word and save it as .docx.");
-  throw new Error("Only .txt, .md and .docx files are supported.");
+  throw new Error("Only .txt, .md, .docx and .pdf files are supported.");
+}
+
+// PDF.js is loaded only when a PDF is uploaded. Pages are joined with a blank line.
+async function pdfText(buf) {
+  let doc;
+  try {
+    const pdfjs = await import("./vendor/pdf.min.mjs");
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL("./vendor/pdf.worker.min.mjs", import.meta.url).href;
+    doc = await pdfjs.getDocument({ data: new Uint8Array(buf) }).promise;
+  } catch { throw new Error("This PDF could not be read."); }
+  const pages = [];
+  for (let i = 1; i <= doc.numPages; i++) {
+    const { items } = await (await doc.getPage(i)).getTextContent();
+    pages.push(items.map((it) => it.str + (it.hasEOL ? "\n" : "")).join("").replace(/[ \t]+\n/g, "\n").trim());
+  }
+  const text = pages.filter(Boolean).join("\n\n").trim();
+  if (!text) throw new Error("No text was found in this PDF. It may be a scanned image.");
+  return text;
 }
 
 // A .docx is a zip; the text lives in word/document.xml.
