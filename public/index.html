@@ -25,7 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=202611080818">
+<link rel="stylesheet" href="styles.css?v=202611080820">
 </head>
 <body>
 
@@ -81,6 +81,9 @@
     <div class="opts" id="opts" hidden>
       <label for="locked">Locked words stay exactly as written. Separate them with commas.</label>
       <input type="text" id="locked" value="Facebook, TikTok, Bangladesh" placeholder="e.g. brand names, technical terms, people">
+      <label for="sample">Match my style (optional). Paste a short piece you wrote yourself.</label>
+      <textarea id="sample" rows="3" maxlength="1500" placeholder="A paragraph or two in your own words"></textarea>
+      <span class="mono sample-count" id="sample-count">0 / 1500</span>
     </div>
     <div class="settings" aria-label="Rewrite settings">
       <div class="seg" role="group" aria-label="Mode" id="strength">
@@ -98,6 +101,16 @@
           <option value="blog">Blog</option>
         </select>
       </label>
+      <label class="select" title="What the text is for">
+        <span class="sr-only">What the text is for</span>
+        <select id="purpose">
+          <option value="general">General</option>
+          <option value="email">Email</option>
+          <option value="essay">Essay</option>
+          <option value="seo">Blog or SEO article</option>
+          <option value="social">Social post</option>
+        </select>
+      </label>
       <label class="select" title="Output language">
         <span class="sr-only">Output language</span>
         <select id="lang">
@@ -112,7 +125,7 @@
         <button type="button" data-v="2" aria-pressed="false" title="2 versions">2×</button>
         <button type="button" data-v="3" aria-pressed="false" title="3 versions">3×</button>
       </div>
-      <button type="button" class="chip-btn" id="opt-toggle" aria-expanded="false" aria-controls="opts" title="Locked words">
+      <button type="button" class="chip-btn" id="opt-toggle" aria-expanded="false" aria-controls="opts" title="Locked words and style">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
         <span class="mini-count" id="lock-count">0</span>
       </button>
@@ -213,6 +226,6 @@
 
 <div class="toast" id="status" role="status" aria-live="polite"></div>
 
-<script type="module" src="app.js?v=202611080818"></script>
+<script type="module" src="app.js?v=202611080820"></script>
 </body>
 </html>

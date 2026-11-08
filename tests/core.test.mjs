@@ -48,3 +48,28 @@ test("sentenceRequest writes in the chosen language", () => {
 test("parseOptions keeps the input language by default", () => {
   assert.equal(parseOptions({ text: "hi" }).lang, "same");
 });
+
+test("parseOptions caps the style sample", () => {
+  assert.equal(parseOptions({ text: "hi", sample: "x".repeat(5000) }).sample.length, 1500);
+});
+
+test("unknown purpose falls back to general", () => {
+  assert.equal(parseOptions({ text: "hi", purpose: "hack" }).purpose, "general");
+  assert.equal(parseOptions({ text: "hi", purpose: "email" }).purpose, "email");
+});
+
+test("rewriteRequest puts the sample in the user message, not the system prompt", () => {
+  const r = rewriteRequest(parseOptions({ text: "Rewrite me.", sample: "MY OWN VOICE SAMPLE" }));
+  assert.ok(r.messages[0].content.includes("MY OWN VOICE SAMPLE"));
+  assert.ok(r.messages[0].content.includes("Rewrite me."));
+  assert.ok(!r.system.includes("MY OWN VOICE SAMPLE"));
+});
+
+test("rewriteRequest without a sample sends the plain text", () => {
+  assert.equal(rewriteRequest(parseOptions({ text: "Rewrite me." })).messages[0].content, "Rewrite me.");
+});
+
+test("rewriteRequest adds the purpose instruction", async () => {
+  const { PURPOSES } = await import("../public/core.js");
+  assert.ok(rewriteRequest(parseOptions({ text: "hi", purpose: "email" })).system.includes(PURPOSES.email));
+});

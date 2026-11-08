@@ -87,6 +87,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 input[type="text"], input[type="password"] { font: inherit; font-size: 14px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; height: 38px; padding: 0 12px; width: 100%; transition: border-color .15s }
 input[type="text"]:focus, input[type="password"]:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft) }
 input[type="password"] { font-family: var(--f-mono); font-size: 13px }
+#sample { font: inherit; font-size: 14px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; width: 100%; resize: vertical; min-height: 64px; transition: border-color .15s }
+#sample:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft) }
+.sample-count { font-size: 12px; color: var(--muted); justify-self: end }
 
 .keybar { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; padding-block: 0 12px }
 .keybar p { margin: 0; flex: 1 1 380px; font-size: 13.5px; color: var(--muted); min-width: 0 }
