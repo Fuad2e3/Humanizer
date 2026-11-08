@@ -131,48 +131,37 @@
   </section>
 </main>
 
-<section class="report" id="report" aria-label="Quality report">
-    <div class="report-head"><h2>Report <span id="report-for"></span></h2><p>Checked automatically after every rewrite.</p></div>
-    <div class="report-grid">
-    <div class="block">
-      <div class="block-head"><h3>AI score</h3><span class="pill idle" id="ai-pill">—</span></div>
-      <div class="meter-row"><span class="mlabel">Before</span><div class="meter" aria-hidden="true"><i id="ai-before-bar"></i></div><span class="meter-num" id="ai-before-num">—</span></div>
-      <div class="meter-row"><span class="mlabel">After</span><div class="meter" aria-hidden="true"><i id="ai-after-bar"></i></div><span class="meter-num" id="ai-after-num">—</span></div>
-      <p class="note" id="ai-signals"></p>
-      <p class="fine">An estimate from writing patterns, not a real AI detector. No detector is 100% accurate.</p>
+<section class="report" id="report" aria-label="Quality report" hidden>
+  <div class="report-head"><h2>Report <span id="report-for"></span></h2></div>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-head"><span>AI score</span><span class="pill idle" id="ai-pill">—</span></div>
+      <div class="stat-val"><span class="from" id="ai-before-num">—</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><b id="ai-after-num">—</b></div>
+      <div class="duo" aria-hidden="true"><i class="ghost" id="ai-before-bar"></i><i id="ai-after-bar"></i></div>
+      <p class="why" id="ai-signals" hidden></p>
     </div>
-
-    <div class="block">
-      <div class="block-head"><h3>Meaning kept</h3><span class="pill idle" id="m-pill">—</span></div>
-      <div class="score">
-        <div class="ring" aria-hidden="true"><svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="27"/><circle class="val" id="m-ring" cx="32" cy="32" r="27" stroke-dasharray="169.6" stroke-dashoffset="169.6"/></svg><span id="m-num">—</span></div>
-        <p class="note" id="m-verdict">After the rewrite, Claude compares it with the original to check that no ideas were lost.</p>
+    <div class="stat">
+      <div class="stat-head"><span>Meaning kept</span><span class="pill idle" id="m-pill">—</span></div>
+      <div class="stat-val ring-val">
+        <div class="ring" aria-hidden="true"><svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="26"/><circle class="val" id="m-ring" cx="32" cy="32" r="26" stroke-dasharray="163.4" stroke-dashoffset="163.4"/></svg></div>
+        <b id="m-num">—</b><span class="unit">/100</span>
       </div>
-      <div id="m-detail" class="detail"></div>
+      <p class="why" id="m-verdict" hidden></p>
+      <div class="detail" id="m-detail"></div>
     </div>
-
-    <div class="block">
-      <div class="block-head"><h3>Numbers and locked words</h3><span class="pill idle" id="f-pill">—</span></div>
+    <div class="stat">
+      <div class="stat-head"><span>Numbers and names</span><span class="pill idle" id="f-pill">—</span></div>
+      <div class="stat-val"><b id="f-num">—</b><span class="unit" id="f-unit"></span></div>
       <div class="chips" id="f-chips"></div>
-      <p class="note" id="f-note"></p>
     </div>
-
-    <div class="block">
-      <div class="block-head"><h3>AI phrases</h3><span class="pill idle" id="a-pill">—</span></div>
+    <div class="stat">
+      <div class="stat-head"><span>AI phrases</span><span class="pill idle" id="a-pill">—</span></div>
+      <div class="stat-val"><span class="from" id="a-from">—</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><b id="a-to">—</b></div>
       <div class="chips" id="a-chips"></div>
-      <p class="note" id="a-note"></p>
     </div>
-
-    <div class="block">
-      <div class="block-head"><h3>Sentence rhythm</h3><span class="pill idle" id="r-pill">—</span></div>
-      <div class="rhythm">
-        <div class="rhythm-row"><span class="mlabel">Before</span><div class="bars" id="r-in"></div></div>
-        <div class="rhythm-row"><span class="mlabel">After</span><div class="bars out" id="r-out"></div></div>
-      </div>
-      <p class="note" id="r-note">People mix short and long sentences. AI sentences tend to be the same length.</p>
-    </div>
-      </div>
-  </section>
+  </div>
+  <p class="fine">The AI score is an estimate from writing patterns, not a real AI detector. No detector is 100% accurate.</p>
+</section>
 
 <dialog id="history" class="drawer" aria-labelledby="history-h">
   <div class="drawer-head">
