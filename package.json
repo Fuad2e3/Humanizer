@@ -5,12 +5,16 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "node --env-file-if-exists=.env server.js"
+    "start": "node --env-file-if-exists=.env server.js",
+    "build:vendor": "esbuild scripts/sdk-entry.mjs --bundle --format=esm --minify --platform=browser --outfile=public/vendor/anthropic.js"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
   }
 }
