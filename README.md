@@ -2,15 +2,24 @@
 
 AI diye lekha text ke manusher moto natural kore rewrite kore. Kintu mane, number ar naam bodlay na. বাংলা, English ar Banglish, teen tai chole.
 
-## Onno humanizer tool er problem, ar egula kivabe solve kora hoyeche
+## Features
 
-| Problem | Manush Lekha ki kore |
+| Feature | Ki kore |
 |---|---|
-| Rewrite korle mane bodle jay | Rewrite er por Claude original ar notun lekha milie dekhe. 0-100 score dey, ar ki harie geche ba notun ki jog hoyeche sheta list kore dekhay |
-| Number, naam, brand bodle jay | Original er shob number ar apnar lock kora word notun lekhay hubohu ache kina check kore, ✓/✗ diye dekhay |
-| Awkward, odbhut sentence | Tone (Natural, Casual, Formal, Academic, Blog) ar koto ta bodlabe (Halka/Majhari/Beshi) nijei bechhe nite paren |
-| Ki bodlalo bojha jay na | "Ki bodlalo" tab e word dhore dhore diff dekhay |
-| AI-sounding lekha | "moreover", "plays a vital role" er moto phrase holud kore highlight kore. Sentence length koto mishano, sheta chart e dekhay |
+| AI detection score | Rewrite er age ar pore lekha koto ta "AI er moto" lage, meter e dekhay, ar keno lage sheta-o bole. Browser ei lekhar pattern dekhe hishab kore, tai eta estimate, guarantee na |
+| 3 ta mode | Halka (shudhu polish), Shadharon (sentence notun kore), Gobhir (puro lekha notun kore sajay) |
+| 3 ta version | Ek click e 1-3 ta alada rewrite, protita'r nijer score soho |
+| Word limit | Free te ekbare 500 word (`FREE_WORD_LIMIT` diye bodlano jay). Nijer key diye GitHub Pages e 3,000 word |
+| File upload | .txt, .md ba Word (.docx) file. Button diye ba editor e tene ana jay. Browser ei pora hoy |
+| History | Shesh 30 ta rewrite browser e save thake. Kholo, copy, muchhe felo |
+| Mane check | Claude original ar notun lekha milie 0-100 score dey, ki harie geche sheta bole |
+| Number o word lock | Number ar locked word hubohu ache kina ✓/✗ diye dekhay |
+| Landing page | Features, review, pricing, FAQ section |
+
+### Launch er age
+
+- **Review section:** `public/index.html` e "User ra ki bolche" section er review gulo sample. Asol user der review diye bodle din.
+- **Pricing:** Pro ar Team plan e "Shiggiri ashche" button dewa ache. Payment (bKash, SSLCommerz, Stripe) ar user account ekhono banano hoyni, tai Pro er 3,000 word limit ekhono kaj kore na.
 
 ## Website kothay chalano jay
 
@@ -50,12 +59,19 @@ Page nije bujhe ney kon mode e cholche. Server thakle server diye kaj kore. Na t
 |---|---|---|
 | `ANTHROPIC_API_KEY` | (lagbei) | Claude API key |
 | `CLAUDE_MODEL` | `claude-opus-5-5` | Kon model diye rewrite hobe |
-| `RATE_LIMIT_PER_MIN` | `10` | Ek IP theke minute e koto ta request kora jabe |
+| `RATE_LIMIT_PER_MIN` | `30` | Ek IP theke minute e koto ta request kora jabe (3 version = 6 ta request) |
+| `FREE_WORD_LIMIT` | `500` | Ekbare koto word deya jabe |
 | `PORT` | `3000` | Local server er port |
 
 ## Folder
 
-- `public/index.html`: website (frontend)
+- `public/index.html`: website er page
+- `public/app.js`: page er mul code
+- `public/styles.css`: design
+- `public/detect.js`: AI score hishab
+- `public/files.js`: .txt/.docx file pora
+- `public/history.js`: history save
+- `public/text.js`: text helper (highlight, diff)
 - `public/core.js`: prompt ar niyom, server ar browser duijon-i eta use kore
 - `public/vendor/anthropic.js`: browser er jonno Claude SDK (`npm run build:vendor` diye banano)
 - `index.html`: GitHub Pages ke `public/` e niye jay
