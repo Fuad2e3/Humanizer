@@ -505,19 +505,6 @@ $("history-clear").addEventListener("click", (e) => {
   renderHistory(clearHistory());
 });
 
-// ---------- Theme ----------
-const THEME_KEY = "humanizer-theme";
-function applyTheme(t) {
-  if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
-  document.querySelectorAll("[data-theme-choice]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeChoice === (t || "system"))));
-}
-let savedTheme = null; try { savedTheme = localStorage.getItem(THEME_KEY); } catch {}
-applyTheme(savedTheme);
-document.querySelectorAll("[data-theme-choice]").forEach((b) => b.addEventListener("click", () => {
-  const t = b.dataset.themeChoice; applyTheme(t);
-  try { t === "system" ? localStorage.removeItem(THEME_KEY) : localStorage.setItem(THEME_KEY, t); } catch {}
-}));
-
 // ---------- Boot with the example loaded ----------
 input.value = EXAMPLE_IN;
 showModeDesc(); showLockCount();
