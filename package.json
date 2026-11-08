@@ -1,0 +1,16 @@
+{
+  "name": "manush-lekha",
+  "version": "1.0.0",
+  "description": "AI-er lekha natural kore rewrite korar website, mane ar number thik rekhe",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0"
+  }
+}

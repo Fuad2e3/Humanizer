@@ -1,0 +1,47 @@
+// Local server: serves public/ and the same /api handlers that Vercel runs.
+import http from "node:http";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import rewrite from "./api/rewrite.js";
+import check from "./api/check.js";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const publicDir = path.join(here, "public");
+const PORT = Number(process.env.PORT || 3000);
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".ico": "image/x-icon" };
+const routes = { "/api/rewrite": rewrite, "/api/check": check };
+
+async function readJson(req) {
+  let size = 0;
+  const chunks = [];
+  for await (const c of req) {
+    size += c.length;
+    if (size > 200_000) throw new Error("too large");
+    chunks.push(c);
+  }
+  return chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {};
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, "http://localhost");
+  const route = routes[url.pathname];
+  if (route) {
+    try { req.body = req.method === "POST" ? await readJson(req) : {}; }
+    catch { res.writeHead(400, { "Content-Type": "application/json" }); return res.end('{"error":"Request ta porte parlam na."}'); }
+    return route(req, res);
+  }
+  const file = path.normalize(path.join(publicDir, url.pathname === "/" ? "index.html" : url.pathname));
+  if (!file.startsWith(publicDir + path.sep)) { res.writeHead(403); return res.end(); }
+  try {
+    const data = await readFile(file);
+    res.writeHead(200, { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" });
+    res.end(data);
+  } catch {
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("Not found");
+  }
+});
+
+if (!process.env.ANTHROPIC_API_KEY) console.warn("Warning: ANTHROPIC_API_KEY set kora nei. Rewrite kaj korbe na.");
+server.listen(PORT, () => console.log(`Manush Lekha cholche: http://localhost:${PORT}`));
