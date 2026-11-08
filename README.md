@@ -1,6 +1,6 @@
 # Humanizer
 
-Rewrites AI-generated text so it reads like a person wrote it, while keeping its meaning, numbers and names the same. Works with English, Bangla and Banglish.
+Rewrites AI-generated text so it reads like a person wrote it, while keeping its meaning, numbers and names the same.
 
 ## Features
 
