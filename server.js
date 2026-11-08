@@ -6,12 +6,13 @@ import { fileURLToPath } from "node:url";
 import rewrite from "./api/rewrite.js";
 import check from "./api/check.js";
 import health from "./api/health.js";
+import sentence from "./api/sentence.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(here, "public");
 const PORT = Number(process.env.PORT || 3000);
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".ico": "image/x-icon" };
-const routes = { "/api/rewrite": rewrite, "/api/check": check, "/api/health": health };
+const routes = { "/api/rewrite": rewrite, "/api/check": check, "/api/health": health, "/api/sentence": sentence };
 
 async function readJson(req) {
   let size = 0;

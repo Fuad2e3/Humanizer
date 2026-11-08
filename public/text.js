@@ -47,3 +47,14 @@ export function diffHTML(a, b) {
   while (j < m) { out += ws(B[j]) ? html(B[j]) : "<ins>" + html(B[j]) + "</ins>"; j++; }
   return out;
 }
+
+// Start/end offsets of each sentence (trimmed), so one sentence can be swapped in place.
+export function sentenceRanges(text) {
+  const out = [];
+  for (const m of text.matchAll(/[^.!?।\n]+(?:[.!?।]+["')\]]*)?/g)) {
+    const lead = m[0].length - m[0].trimStart().length;
+    const start = m.index + lead, end = m.index + m[0].trimEnd().length;
+    if (end > start && /[\p{L}\p{N}]/u.test(text.slice(start, end))) out.push({ start, end });
+  }
+  return out;
+}

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fuad2e3.github.io/Humanizer/public/sitemap.xml
