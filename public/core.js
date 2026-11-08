@@ -55,6 +55,17 @@ const LANGS = {
   banglish: "Banglish (Bangla written in Latin letters)"
 };
 
+// Fixed fixes for each AI-score signal (keys match aiScore().keys), sent on an automatic second try.
+export const FEEDBACK = {
+  phrases: "The last attempt still used stock AI phrases. Replace every one with plain, specific wording.",
+  flat: "The last attempt had sentences of nearly equal length. Make some very short and some long.",
+  starters: "The last attempt opened many sentences with linking words such as Moreover or Furthermore. Start sentences in varied, natural ways.",
+  stiff: "The last attempt sounded stiff. Use contractions where a person naturally would.",
+  dash: "The last attempt used em-dashes. Use commas, full stops or brackets instead.",
+  repeat: "The last attempt repeated the same words often. Vary the wording or use pronouns.",
+  openings: "The last attempt began many sentences with the same word. Vary how sentences begin."
+};
+
 export class InputError extends Error {}
 
 // Checks a rewrite request and returns clean options.
@@ -73,6 +84,7 @@ export function parseOptions(body, { maxWords = FREE_WORD_LIMIT } = {}) {
     tone: pick(body.tone, TONES, "natural"),
     strength: pick(body.strength, STRENGTH, "medium"),
     lang: pick(body.lang, LANGS, "en"),
+    feedback: Array.isArray(body.feedback) ? [...new Set(body.feedback.filter((k) => typeof k === "string" && Object.hasOwn(FEEDBACK, k)))].slice(0, 7) : [],
     variant: Number.isInteger(body.variant) && body.variant >= 0 && body.variant < VARIANTS.length ? body.variant : 0,
     locked
   };
@@ -80,7 +92,7 @@ export function parseOptions(body, { maxWords = FREE_WORD_LIMIT } = {}) {
 
 // Builds the Messages API request for a rewrite.
 export function rewriteRequest(opts, model = MODEL_DEFAULT) {
-  const { tone, strength, lang, locked, variant = 0 } = opts;
+  const { tone, strength, lang, locked, variant = 0, feedback = [] } = opts;
   return {
     model,
     max_tokens: 16000,
@@ -95,7 +107,7 @@ Rules:
 - Avoid filler phrases such as: ${AI_PHRASES.join(", ")}.
 - Do not use em-dashes.
 ${locked.length ? `- Keep these terms exactly as written: ${locked.join(", ")}.\n` : ""}- Write the output in ${LANGS[lang]}.
-- Reply with only the rewritten text. No preface, notes or quotes around it.${VARIANTS[variant] ? "\n- " + VARIANTS[variant] : ""}`,
+- Reply with only the rewritten text. No preface, notes or quotes around it.${VARIANTS[variant] ? "\n- " + VARIANTS[variant] : ""}${feedback.length ? "\n- Fix these problems from the last attempt: " + feedback.map((k) => FEEDBACK[k]).join(" ") : ""}`,
     messages: [{ role: "user", content: opts.text }],
     ...FALLBACK
   };

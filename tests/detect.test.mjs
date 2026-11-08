@@ -35,3 +35,18 @@ test("keys and signals line up", () => {
     assert.equal(r.keys.length, r.signals.length);
   }
 });
+
+import { shouldRetry, RETRY_THRESHOLD, MAX_RETRIES } from "../public/detect.js";
+
+test("shouldRetry", () => {
+  assert.equal(RETRY_THRESHOLD, 45);
+  assert.equal(MAX_RETRIES, 1);
+  assert.equal(shouldRetry(null, 0), false);
+  assert.equal(shouldRetry({ score: 70 }, 0), true);
+  assert.equal(shouldRetry({ score: 70 }, 1), false);
+  assert.equal(shouldRetry({ score: 40 }, 0), false);
+});
+
+test("short text never triggers a retry", () => {
+  assert.equal(shouldRetry(aiScore("Moreover, this is crucial."), 0), false);
+});
