@@ -56,23 +56,15 @@
     </header>
 
     <section class="work" id="tool" aria-label="Rewrite workspace">
-      <div class="modes" role="group" aria-labelledby="mode-l" id="strength">
-        <span class="label modes-label" id="mode-l">Mode</span>
-        <button type="button" class="mode" data-v="light" aria-pressed="false">
-          <span class="mode-name"><i class="lvl" data-l="1" aria-hidden="true"></i>Light</span>
-          <span class="mode-desc">Fixes only the robotic parts</span>
-        </button>
-        <button type="button" class="mode" data-v="medium" aria-pressed="true">
-          <span class="mode-name"><i class="lvl" data-l="2" aria-hidden="true"></i>Balanced</span>
-          <span class="mode-desc">Rewrites sentences, keeps the structure</span>
-        </button>
-        <button type="button" class="mode" data-v="strong" aria-pressed="false">
-          <span class="mode-name"><i class="lvl" data-l="3" aria-hidden="true"></i>Deep</span>
-          <span class="mode-desc">Restructures everything, same meaning</span>
-        </button>
-      </div>
-
       <div class="toolbar" aria-label="Rewrite settings">
+        <div class="field">
+          <span class="label" id="mode-l">Mode</span>
+          <div class="seg" role="group" aria-labelledby="mode-l" id="strength">
+            <button type="button" data-v="light" aria-pressed="false" data-desc="Fixes only the robotic parts"><i class="lvl" data-l="1" aria-hidden="true"></i>Light</button>
+            <button type="button" data-v="medium" aria-pressed="true" data-desc="Rewrites sentences, keeps the structure"><i class="lvl" data-l="2" aria-hidden="true"></i>Balanced</button>
+            <button type="button" data-v="strong" aria-pressed="false" data-desc="Restructures everything, same meaning"><i class="lvl" data-l="3" aria-hidden="true"></i>Deep</button>
+          </div>
+        </div>
         <div class="field">
           <span class="label" id="tone-l">Tone</span>
           <div class="seg" role="group" aria-labelledby="tone-l" id="tone">
@@ -84,16 +76,22 @@
           </div>
         </div>
         <div class="field">
-          <span class="label" id="ver-l">Version</span>
+          <span class="label" id="ver-l">Versions</span>
           <div class="seg" role="group" aria-labelledby="ver-l" id="versions">
             <button type="button" data-v="1" aria-pressed="true">1</button>
             <button type="button" data-v="2" aria-pressed="false">2</button>
             <button type="button" data-v="3" aria-pressed="false">3</button>
           </div>
         </div>
-        <div class="field grow">
-          <label class="label" for="locked">Locked words (never changed)</label>
-          <input type="text" id="locked" value="Facebook, TikTok, Bangladesh" placeholder="Comma-separated, e.g. brand names, technical terms">
+        <button type="button" class="opt-toggle" id="opt-toggle" aria-expanded="false" aria-controls="opts">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          Locked words <span class="mini-count" id="lock-count">0</span>
+          <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <p class="mode-desc-line" id="mode-desc">Rewrites sentences, keeps the structure</p>
+        <div class="opts" id="opts" hidden>
+          <label class="label" for="locked">Locked words are never changed. Separate them with commas.</label>
+          <input type="text" id="locked" value="Facebook, TikTok, Bangladesh" placeholder="e.g. brand names, technical terms, people">
         </div>
       </div>
 
@@ -161,11 +159,15 @@
       </div>
 
       <div class="actionbar">
-        <button type="button" class="btn primary" id="go"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"/></svg><span>Humanize</span></button>
+        <button type="button" class="btn primary" id="go" title="Ctrl + Enter"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"/></svg><span>Humanize</span></button>
         <button type="button" class="btn" id="again" hidden>Try again</button>
         <button type="button" class="btn ghost" id="stop" hidden>Stop</button>
         <span class="status" id="status" role="status"></span>
-        <span class="hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
+        <a class="summary" href="#report" id="summary" aria-label="Open the quality report">
+          <span class="sum" id="sum-ai"><span class="sum-k">AI</span><b>—</b></span>
+          <span class="sum" id="sum-mean"><span class="sum-k">Meaning</span><b>—</b></span>
+          <span class="sum" id="sum-facts"><span class="sum-k">Facts</span><b>—</b></span>
+        </a>
       </div>
     </section>
 
