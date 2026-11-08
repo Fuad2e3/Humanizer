@@ -1,5 +1,5 @@
 import { parseOptions, rewriteRequest, checkRequest, readCheck, describeError, FREE_WORD_LIMIT, OWN_KEY_WORD_LIMIT } from "./core.js";
-import { markAI, findAI, words, sentences, spread, numbersIn, diffHTML } from "./text.js";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML } from "./text.js";
 import { aiScore, MIN_WORDS } from "./detect.js";
 import { readTextFile, ACCEPT } from "./files.js";
 import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js";
@@ -166,83 +166,64 @@ function renderVersionTabs() {
 const setPill = (id, cls, text) => { const p = $(id); p.className = "pill " + cls; p.textContent = text; };
 const chip = (text, cls = "") => { const s = document.createElement("span"); s.className = "chip " + cls; s.textContent = text; return s; };
 
-function renderAI(src, out) {
-  const before = aiScore(src), after = out ? aiScore(out) : null;
-  const meter = (bar, num, r) => {
-    $(bar).style.width = (r ? r.score : 0) + "%";
-    $(bar).className = r ? r.tone : "";
-    countTo($(num), r ? r.score : null);
-  };
-  meter("ai-before-bar", "ai-before-num", before);
-  meter("ai-after-bar", "ai-after-num", after);
-  const show = after || before;
-  if (!show) { setPill("ai-pill", "idle", "—"); $("ai-signals").textContent = `The AI score needs at least ${MIN_WORDS} words.`; return; }
-  if (after && before) {
-    const drop = before.score - after.score;
-    setPill("ai-pill", after.tone, drop > 0 ? `${drop} points lower` : after.label);
-  } else setPill("ai-pill", show.tone, show.label);
-  $("ai-signals").textContent = show.signals.length
-    ? `Why ${after ? "the rewrite" : "your text"} looks AI-written: ${show.signals.join(", ")}.`
-    : `No common AI patterns found in ${after ? "the rewrite" : "your text"}.`;
-}
+// Report: hidden until there is a result, then only the numbers and any problems.
+const pillTone = (score) => (score >= 90 ? "ok" : score >= 75 ? "warn" : "bad");
 
 function renderChecks() {
   const v = cur(), out = v.status === "streaming" ? "" : v.text;
-  const src = out ? state.source : input.value;
-  renderAI(src, out);
+  $("report").hidden = !out;
+  if (!out) return;
+  const src = state.source;
 
-  const inAI = findAI(src), outAI = out ? findAI(out) : null;
-  const target = outAI ?? inAI, total = [...target.values()].reduce((a, b) => a + b, 0);
-  $("a-chips").replaceChildren(...[...target.entries()].map(([k, c]) => chip(c > 1 ? `${k} ×${c}` : k)));
-  if (outAI) {
-    const before = [...inAI.values()].reduce((a, b) => a + b, 0);
-    setPill("a-pill", total === 0 ? "ok" : total <= 2 ? "warn" : "bad", total === 0 ? "Clean" : `${total} left`);
-    $("a-note").textContent = `${before} in the original, ${total} in the rewrite.`;
-  } else {
-    setPill("a-pill", total === 0 ? "ok" : "warn", `${total} found`);
-    $("a-note").textContent = total ? "These show up a lot in AI-written text." : "No common AI phrases found.";
-  }
-
-  const lin = sentences(src).map(words), lout = out ? sentences(out).map(words) : [];
-  const maxLen = Math.max(1, ...lin, ...lout);
-  const bars = (el, arr) => el.replaceChildren(...arr.slice(0, 40).map((n) => { const i = document.createElement("i"); i.style.height = Math.max(6, (n / maxLen) * 100) + "%"; i.title = n + " words"; return i; }));
-  bars($("r-in"), lin); bars($("r-out"), lout);
-  const sIn = spread(lin), sOut = spread(lout);
-  if (out && lout.length > 1) {
-    const pct = Math.round(sOut * 100);
-    setPill("r-pill", sOut >= 0.35 ? "ok" : sOut >= 0.2 ? "warn" : "bad", `Variation ${pct}%`);
-    $("r-note").textContent = `Sentence length variation: ${Math.round(sIn * 100)}% before, ${pct}% after. Above 35% reads as natural.`;
-  } else {
-    setPill("r-pill", "idle", lin.length > 1 ? `Variation ${Math.round(sIn * 100)}%` : "—");
-    $("r-note").textContent = "People mix short and long sentences. AI sentences tend to be the same length.";
-  }
-
-  const fChips = $("f-chips"); fChips.replaceChildren();
-  let miss = 0;
-  const items = [...numbersIn(src).map((n) => ({ t: n })), ...lockedTerms().filter((t) => src.toLowerCase().includes(t.toLowerCase())).map((t) => ({ t }))];
-  if (!items.length) { setPill("f-pill", "idle", "—"); $("f-note").textContent = "No numbers or locked words in the text."; }
-  else if (!out) { items.forEach((x) => fChips.append(chip(x.t))); setPill("f-pill", "idle", `${items.length} to check`); $("f-note").textContent = "After the rewrite, each one is checked."; }
+  // AI score, before and after
+  const before = aiScore(src), after = aiScore(out);
+  const bar = (id, r) => { $(id).style.width = (r ? r.score : 0) + "%"; $(id).className = (id === "ai-before-bar" ? "ghost " : "") + (r ? r.tone : ""); };
+  bar("ai-before-bar", before); bar("ai-after-bar", after);
+  countTo($("ai-before-num"), before ? before.score : null);
+  countTo($("ai-after-num"), after ? after.score : null);
+  const why = $("ai-signals");
+  if (!after) { setPill("ai-pill", "idle", "Too short"); why.hidden = false; why.textContent = `Needs at least ${MIN_WORDS} words for a score.`; }
   else {
-    items.forEach((x) => { const ok = out.toLowerCase().includes(x.t.toLowerCase()); if (!ok) miss++; fChips.append(chip((ok ? "✓ " : "✗ ") + x.t, ok ? "kept" : "missing")); });
-    setPill("f-pill", miss ? "bad" : "ok", miss ? `${miss} missing` : "All kept");
-    $("f-note").textContent = miss ? "The red ones are missing from the rewrite. Try again or fix them by hand." : "Every number and locked word is kept exactly.";
+    const drop = before ? before.score - after.score : 0;
+    setPill("ai-pill", after.tone, after.tone === "ok" && drop > 0 ? `${drop} lower` : after.label);
+    why.hidden = !(after.score > 30 && after.signals.length);
+    if (!why.hidden) why.textContent = `Still looks AI-written: ${after.signals.join(", ")}.`;
   }
+
+  // AI phrases: only the ones still left are shown
+  const total = (m) => [...m.values()].reduce((a, b) => a + b, 0);
+  const inAI = findAI(src), outAI = findAI(out), left = total(outAI);
+  $("a-from").textContent = String(total(inAI));
+  $("a-to").textContent = String(left);
+  setPill("a-pill", left === 0 ? "ok" : left <= 2 ? "warn" : "bad", left === 0 ? "Clean" : `${left} left`);
+  $("a-chips").replaceChildren(...[...outAI.entries()].map(([k, c]) => chip(c > 1 ? `${k} ×${c}` : k)));
+
+  // Numbers and locked words: only the missing ones are shown
+  const items = [...numbersIn(src), ...lockedTerms().filter((t) => src.toLowerCase().includes(t.toLowerCase()))];
+  const missing = items.filter((t) => !out.toLowerCase().includes(t.toLowerCase()));
+  if (!items.length) { $("f-num").textContent = "—"; $("f-unit").textContent = ""; setPill("f-pill", "idle", "None to check"); }
+  else {
+    $("f-num").textContent = String(items.length - missing.length);
+    $("f-unit").textContent = `/${items.length} kept`;
+    setPill("f-pill", missing.length ? "bad" : "ok", missing.length ? `${missing.length} missing` : "All kept");
+  }
+  $("f-chips").replaceChildren(...missing.map((t) => chip("✗ " + t, "missing")));
+
   renderMeaning(v);
 }
 
-
 function renderMeaning(v) {
-  const c = v.check, detail = $("m-detail"); detail.replaceChildren();
-  const ring = (n) => { $("m-ring").style.strokeDashoffset = String(169.6 * (1 - (n ?? 0) / 100)); countTo($("m-num"), n ?? null); };
-  if (c === "pending") { ring(null); setPill("m-pill", "idle", "Checking…"); $("m-verdict").textContent = "Claude is comparing the rewrite with the original…"; return; }
-  if (!c) {
-    ring(null); setPill("m-pill", "idle", "—");
-    $("m-verdict").textContent = v.text && v.status !== "streaming" ? "The meaning check could not be completed." : "After the rewrite, Claude compares it with the original to check that no ideas were lost.";
-    return;
-  }
+  const c = v.check, detail = $("m-detail"), verdict = $("m-verdict");
+  detail.replaceChildren();
+  const ring = (n) => { $("m-ring").style.strokeDashoffset = String(163.4 * (1 - (n ?? 0) / 100)); countTo($("m-num"), n ?? null); };
+  if (c === "pending") { ring(null); setPill("m-pill", "idle", "Checking…"); verdict.hidden = true; return; }
+  if (!c) { ring(null); setPill("m-pill", "idle", "Not checked"); verdict.hidden = true; return; }
   ring(c.score);
-  setPill("m-pill", c.score >= 90 ? "ok" : c.score >= 75 ? "warn" : "bad", c.score >= 90 ? "Preserved" : c.score >= 75 ? "Mostly kept" : "Meaning changed");
-  $("m-verdict").textContent = c.verdict || "";
+  setPill("m-pill", pillTone(c.score), c.score >= 90 ? "Preserved" : c.score >= 75 ? "Mostly kept" : "Changed");
+  // Explain only when something was lost or added.
+  const problems = (c.missing?.length || 0) + (c.added?.length || 0);
+  verdict.hidden = !(problems || c.score < 90);
+  verdict.textContent = c.verdict || "";
   const list = (title, arr) => {
     if (!arr || !arr.length) return;
     const h = document.createElement("span"); h.className = "label"; h.textContent = title;
