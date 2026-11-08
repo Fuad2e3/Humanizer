@@ -1,8 +1,8 @@
-import { parseOptions, rewriteRequest, checkRequest, readCheck, parseSentence, sentenceRequest, readSentence, describeError, FREE_WORD_LIMIT, OWN_KEY_WORD_LIMIT } from "./core.js?v=202611080815";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080815";
-import { aiScore, MIN_WORDS } from "./detect.js?v=202611080815";
-import { readTextFile, ACCEPT } from "./files.js?v=202611080815";
-import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080815";
+import { parseOptions, rewriteRequest, checkRequest, readCheck, parseSentence, sentenceRequest, readSentence, describeError, FREE_WORD_LIMIT, OWN_KEY_WORD_LIMIT } from "./core.js?v=202611080817";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080817";
+import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611080817";
+import { readTextFile, ACCEPT } from "./files.js?v=202611080817";
+import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080817";
 
 const $ = (id) => document.getElementById(id);
 const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
@@ -274,7 +274,7 @@ $("forget").addEventListener("click", () => { $("apikey").value = ""; $("remembe
 async function browserClient() {
   const apiKey = $("apikey").value.trim();
   if (!apiKey) { $("apikey").focus(); throw fail("Enter your Claude API key above first."); }
-  if (!Anthropic) Anthropic = (await import("./vendor/anthropic.js?v=202611080815")).default;
+  if (!Anthropic) Anthropic = (await import("./vendor/anthropic.js?v=202611080817")).default;
   return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 }
 const toUserError = (e, signal, partial) => {
@@ -459,6 +459,22 @@ async function run() {
   const rewrite = mode === "server" ? serverRewrite : browserRewrite;
   const check = mode === "server" ? serverCheck : browserCheck;
 
+  // If the score is still high, rewrite once more with fixes for what the score found.
+  // The retry replaces the first text only when it scores lower; a stop or error keeps the first.
+  const improve = async (i, v) => {
+    const first = aiScore(v.text);
+    if (!shouldRetry(first, 0)) return;
+    v.attempts = 2;
+    if (!signal.aborted) setStatus(count > 1 ? `Improving version ${i + 1}…` : "Improving…");
+    try {
+      const { text, stop } = await rewrite({ ...settings, text: src, variant: i, feedback: first.keys }, signal, () => {});
+      const second = aiScore(text.trim());
+      if (stop !== "refusal" && text.trim() && second && second.score < first.score) { v.text = text.trim(); v.stop = stop; }
+    } catch (e) {
+      // Keep the first text on a stop or error.
+    }
+  };
+
   const one = async (i) => {
     const v = state.versions[i];
     try {
@@ -469,6 +485,8 @@ async function run() {
       v.text = text.trim(); v.stop = stop;
       if (stop === "refusal") throw fail("Claude declined to rewrite this text.");
       if (!v.text) throw fail("No response came back. Please try again.");
+      v.attempts = 1;
+      await improve(i, v);
       v.status = "checking"; v.check = "pending"; renderAll();
       try { v.check = await check(src, v.text, signal); }
       catch (e) { v.check = null; if (e.name === "AbortError") throw e; }
