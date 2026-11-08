@@ -1,7 +1,8 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { words, spread } from "./text.js?v=202611080926";
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES } from "./rules-data.js?v=202611080926";
+import { aiScore } from "./detect.js?v=202611080927";
+import { words, spread } from "./text.js?v=202611080927";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES } from "./rules-data.js?v=202611080927";
 
 const MARK = "";   // where something was deleted; tidy() cleans up around it
 const CAP = "";    // capitalize the next letter
@@ -242,4 +243,64 @@ export function rhythm(text, pick, tone = "natural") {
     return c.text;
   }).join("");
   return { text: out, changes };
+}
+
+// ---------- The engine ----------
+const LEVELS = ["light", "medium", "strong"];
+const TARGET = 30;   // stop once the pattern score is at or below this
+
+// One rewrite with one seed: light = phrases and words; medium adds openers, contractions and dashes;
+// strong adds sentence rhythm.
+function runOnce(text, { strength, tone, locked, seed }) {
+  const pick = makePick(rng(seed));
+  const p = protect(text, locked);
+  const level = LEVELS.indexOf(strength);
+  const changes = [];
+  let t = p.text;
+  const step = (r) => { t = r.text; changes.push(...r.changes); };
+  if (level >= 1) step(dropOpeners(t, pick, tone));
+  step(replacePhrases(t, pick));
+  step(swapWords(t, pick));
+  if (level >= 1) {
+    if (tone !== "formal" && tone !== "academic") step(contract(t));
+    step(fixDashes(t));
+  }
+  step(tidy(t));
+  if (level >= 2) step(rhythm(t, pick, tone));
+  return { text: p.restore(t), changes };
+}
+
+// Tries three seeds and keeps the lowest pattern score (ties: fewer changes).
+function bestOf(text, opts) {
+  let best = null;
+  for (const seed of [opts.seed, opts.seed + 100, opts.seed + 200]) {
+    const r = runOnce(text, { ...opts, seed });
+    r.score = aiScore(r.text);
+    const s = r.score ? r.score.score : 0, b = best && (best.score ? best.score.score : 0);
+    if (!best || s < b || (s === b && r.changes.length < best.changes.length)) best = r;
+  }
+  return best;
+}
+
+// Rewrites text with the rules. If the score is still above the target, runs once more one level stronger.
+export function humanizeLocal(text, { strength = "medium", tone = "natural", locked = [], seed = 1 } = {}) {
+  const level = Math.max(0, LEVELS.indexOf(strength));
+  let r = bestOf(text, { strength: LEVELS[level], tone, locked, seed });
+  let passes = 1;
+  if (r.score && r.score.score > TARGET && level < LEVELS.length - 1) {
+    passes = 2;
+    const r2 = bestOf(text, { strength: LEVELS[level + 1], tone, locked, seed });
+    if (r2.score && r2.score.score <= r.score.score) r = r2;
+  }
+  return { text: r.text, changes: r.changes, passes, score: r.score };
+}
+
+// Up to three different wordings of one sentence; fewer when the rules find nothing to change.
+export function sentenceOptionsLocal(sentence, { tone = "natural", locked = [] } = {}) {
+  const found = [];
+  for (let seed = 1; seed <= 12 && found.length < 3; seed++) {
+    const t = runOnce(sentence, { strength: "strong", tone, locked, seed }).text.trim();
+    if (t !== sentence.trim() && !found.includes(t)) found.push(t);
+  }
+  return found;
 }

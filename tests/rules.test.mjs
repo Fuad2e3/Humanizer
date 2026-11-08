@@ -175,3 +175,88 @@ test("rhythm leaves Bangla alone", () => {
   const bn = "আমরা সোমবার দেখা করেছি। সবাই নতুন পরিকল্পনা নিয়ে কথা বলেছে।";
   assert.equal(rhythm(bn, makePick(rng(1))).text, bn);
 });
+
+import { humanizeLocal, sentenceOptionsLocal } from "../public/rules.js";
+import { STOCK_AI_EN, CASUAL_EN, STOCK_AI_BN, REPEATED_EN } from "./fixtures.mjs";
+
+const HIDDEN = /[​-‏‪-‮⁠-⁤﻿-]/;
+const EXAMPLE = "In today's fast-paced world, social media plays a vital role in shaping how young people communicate. Moreover, it is important to note that platforms like Facebook and TikTok have fundamentally transformed the landscape of friendship. Furthermore, studies show that 62% of teenagers in Bangladesh use social media for more than 3 hours a day. In conclusion, social media is a double-edged sword that offers both opportunities and challenges.";
+const wordDiff = (a, b) => {
+  const A = a.toLowerCase().match(/[\p{L}']+/gu), B = new Set(b.toLowerCase().match(/[\p{L}']+/gu));
+  return A.filter((w) => !B.has(w)).length / A.length;
+};
+
+test("stock AI English comes out human-like", () => {
+  const r = humanizeLocal(STOCK_AI_EN);
+  assert.ok(r.score.score <= 30, `score ${r.score.score}: ${r.text}`);
+});
+
+test("the example text drops at least 40 points and reads cleanly", () => {
+  const before = aiScore(EXAMPLE).score;
+  const r = humanizeLocal(EXAMPLE, { locked: ["Facebook", "TikTok", "Bangladesh"] });
+  assert.ok(r.score.score <= before - 40, `${before} -> ${r.score.score}: ${r.text}`);
+  assert.ok(!/cuts both ways that|landscape/.test(r.text), r.text);
+});
+
+test("stock AI Bangla score drops", () => {
+  const before = aiScore(STOCK_AI_BN).score, r = humanizeLocal(STOCK_AI_BN);
+  assert.ok(r.score.score < before - 25, `${before} -> ${r.score.score}: ${r.text}`);
+});
+
+test("casual text is barely touched", () => {
+  const r = humanizeLocal(CASUAL_EN);
+  assert.ok(wordDiff(CASUAL_EN, r.text) < 0.05, r.text);
+});
+
+test("numbers, locked terms and quotes survive", () => {
+  const r = humanizeLocal(EXAMPLE + ' She said "it is crucial" twice.', { locked: ["Facebook", "TikTok", "Bangladesh"], strength: "strong" });
+  for (const s of ["62%", " 3 ", "Facebook", "TikTok", "Bangladesh", '"it is crucial"']) assert.ok(r.text.includes(s), `lost ${s}: ${r.text}`);
+});
+
+test("no hidden or placeholder characters", () => {
+  for (const t of [STOCK_AI_EN, CASUAL_EN, STOCK_AI_BN, REPEATED_EN, EXAMPLE]) {
+    for (const seed of [1, 2, 3, 4, 5]) for (const strength of ["light", "medium", "strong"]) {
+      assert.ok(!HIDDEN.test(humanizeLocal(t, { seed, strength }).text), `seed ${seed} ${strength}`);
+    }
+  }
+});
+
+test("same seed, same output", () => {
+  assert.equal(humanizeLocal(STOCK_AI_EN, { seed: 4 }).text, humanizeLocal(STOCK_AI_EN, { seed: 4 }).text);
+});
+
+test("different seeds give different versions", () => {
+  const outs = new Set([1, 2, 3].map((seed) => humanizeLocal(STOCK_AI_EN, { seed }).text));
+  assert.equal(outs.size, 3);
+});
+
+test("formal tone adds no contractions", () => {
+  const out = humanizeLocal(STOCK_AI_EN, { tone: "formal", strength: "strong" }).text;
+  assert.ok(!/\b(it's|that's|there's|don't|doesn't|isn't|aren't|can't|won't|they're|we're|you're|I'm)\b/i.test(out), out);
+});
+
+test("light mode keeps sentence structure", () => {
+  const r = humanizeLocal(STOCK_AI_EN, { strength: "light" });
+  assert.equal(sentences(r.text).length, sentences(STOCK_AI_EN).length);
+});
+
+test("a second pass runs only when the score is still high", () => {
+  assert.equal(humanizeLocal(CASUAL_EN).passes, 1);
+  assert.ok(humanizeLocal(STOCK_AI_EN).passes <= 2);
+});
+
+test("fast enough", () => {
+  const big = (STOCK_AI_EN + "\n\n").repeat(Math.ceil(30000 / STOCK_AI_EN.length)).slice(0, 30000);
+  const t0 = performance.now();
+  humanizeLocal(big, { strength: "strong" });
+  const ms = performance.now() - t0;
+  assert.ok(ms < 200, `${ms.toFixed(0)} ms`);
+});
+
+test("sentence options", () => {
+  const s = "Moreover, it is crucial to leverage robust tools.";
+  const opts = sentenceOptionsLocal(s);
+  assert.ok(opts.length >= 2 && opts.length <= 3, JSON.stringify(opts));
+  assert.equal(new Set(opts).size, opts.length);
+  assert.ok(!opts.includes(s));
+});
