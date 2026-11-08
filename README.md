@@ -7,10 +7,15 @@ Rewrites AI-generated text so it reads like a person wrote it, while keeping its
 | Feature | What it does |
 |---|---|
 | AI detection score | Shows how AI-like the text looks before and after the rewrite, on a meter, and explains why. It is computed in the browser from writing patterns, so it is an estimate, not a guarantee |
+| Automatic second try | If a rewrite still scores above 45, it is rewritten once more with fixes for what the score found, and the version with the lower score is kept |
 | 3 modes | Light (polish only), Balanced (rewrites sentences), Deep (restructures the whole text) |
 | Up to 3 versions | One click gives 1 to 3 different rewrites, each with its own score |
 | Word limit | 500 words per rewrite on the free tier (set with `FREE_WORD_LIMIT`). 3,000 words when visitors use their own key on GitHub Pages |
-| File upload | .txt, .md and Word (.docx) files, by button or drag and drop. Files are read in the browser |
+| Language | Keep the input language, or write the result in English, Bangla or Banglish |
+| Purpose | General, Email, Essay, Blog or SEO article, Social post |
+| Match my style | Paste up to 1,500 characters of your own writing and the rewrite follows its voice |
+| File upload | .txt, .md, Word (.docx) and PDF files, by button or drag and drop. Files are read in the browser. Scanned PDFs without a text layer are not supported |
+| Word download | Save the result as a .docx file |
 | History | The last 30 rewrites are saved in the browser and can be reopened, copied or deleted |
 | Sentence rewrite | Click any sentence in the result to get three new wordings that fit the paragraph; picking one re-runs the meaning check |
 | Meaning check | Claude compares the rewrite with the original, gives a 0-100 score and lists anything lost or added |
@@ -62,6 +67,14 @@ After changing anything in `public/`, run this before you commit so visitors' br
 npm run bump
 ```
 
+## Tests
+
+```bash
+npm test
+```
+
+Runs the unit tests and a browser test of the page (with the API mocked, so no key is needed). The browser test uses Playwright if it is installed and is skipped otherwise.
+
 ## Settings (environment variables)
 
 | Name | Default | Purpose |
@@ -82,10 +95,13 @@ npm run bump
 - `public/styles.css`: styles
 - `public/core.js`: prompts and options, shared by the server and the browser
 - `public/detect.js`: AI score estimate
-- `public/files.js`: reads .txt and .docx files
+- `public/files.js`: reads .txt, .md, .docx and .pdf files
+- `public/docx-export.js`: builds the .docx download
 - `public/history.js`: saves history in the browser
 - `public/text.js`: text helpers (highlighting, diff)
 - `public/vendor/anthropic.js`: Claude SDK bundled for the browser (`npm run build:vendor`)
+- `public/vendor/pdf.min.mjs`, `pdf.worker.min.mjs`: PDF.js for PDF upload (`npm run build:pdf`)
+- `tests/`: tests (`npm test`)
 - `api/rewrite.js`: streams a rewrite
 - `api/check.js`: runs the meaning check
 - `api/sentence.js`: three alternatives for one sentence
@@ -96,6 +112,6 @@ npm run bump
 
 ## Notes
 
-- Each rewrite makes two Claude calls (rewrite and meaning check), so 3 versions cost three times as much as 1. On a public site, keep `RATE_LIMIT_PER_MIN` low. On Vercel the limit is counted per server instance, so use Vercel Firewall if you need a strict limit.
+- Each rewrite makes two Claude calls (rewrite and meaning check), so 3 versions cost three times as much as 1. An automatic second try adds one more rewrite call for that version. The meaning check and sentence options use the cheaper `CLAUDE_FAST_MODEL`. On a public site, keep `RATE_LIMIT_PER_MIN` low. On Vercel the limit is counted per server instance, so use Vercel Firewall if you need a strict limit.
 - If Claude declines a request, it is retried on another model automatically.
 - No tool can guarantee passing AI detectors. The goal is to make text read better and more naturally.
