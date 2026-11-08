@@ -37,6 +37,18 @@ const setSeg = (id, v) => $(id).querySelectorAll("button[data-v]").forEach((x) =
 }));
 const lockedTerms = () => $("locked").value.split(",").map((s) => s.trim()).filter(Boolean);
 
+// Mode description under the toolbar, and the locked-words panel
+const showModeDesc = () => { $("mode-desc").textContent = $("strength").querySelector('[aria-pressed="true"]').dataset.desc || ""; };
+$("strength").addEventListener("click", showModeDesc);
+const showLockCount = () => { $("lock-count").textContent = String(lockedTerms().length); };
+$("locked").addEventListener("input", showLockCount);
+$("opt-toggle").addEventListener("click", () => {
+  const open = $("opt-toggle").getAttribute("aria-expanded") !== "true";
+  $("opt-toggle").setAttribute("aria-expanded", String(open));
+  $("opts").hidden = !open;
+  if (open) $("locked").focus();
+});
+
 // ---------- Input, highlight, word counter ----------
 function syncInput() {
   backdropInner.innerHTML = markAI(input.value) + "\n ";
@@ -151,16 +163,31 @@ function renderChecks() {
   }
 
   const fChips = $("f-chips"); fChips.replaceChildren();
+  let miss = 0;
   const items = [...numbersIn(src).map((n) => ({ t: n })), ...lockedTerms().filter((t) => src.toLowerCase().includes(t.toLowerCase())).map((t) => ({ t }))];
   if (!items.length) { setPill("f-pill", "idle", "—"); $("f-note").textContent = "No numbers or locked words in the text."; }
   else if (!out) { items.forEach((x) => fChips.append(chip(x.t))); setPill("f-pill", "idle", `${items.length} to check`); $("f-note").textContent = "After the rewrite, each one is checked."; }
   else {
-    let miss = 0;
     items.forEach((x) => { const ok = out.toLowerCase().includes(x.t.toLowerCase()); if (!ok) miss++; fChips.append(chip((ok ? "✓ " : "✗ ") + x.t, ok ? "kept" : "missing")); });
     setPill("f-pill", miss ? "bad" : "ok", miss ? `${miss} missing` : "All kept");
     $("f-note").textContent = miss ? "The red ones are missing from the rewrite. Try again or fix them by hand." : "Every number and locked word is kept exactly.";
   }
   renderMeaning(v);
+  renderSummary(v, src, out, out && items.length ? items.length - miss : null, items.length);
+}
+
+// Compact chips next to the Humanize button
+function renderSummary(v, src, out, kept, total) {
+  const set = (id, tone, text) => { const el = $(id); el.className = "sum" + (tone ? " " + tone : ""); el.querySelector("b").textContent = text; };
+  const before = aiScore(src), after = out ? aiScore(out) : null;
+  const ai = after || before;
+  set("sum-ai", ai?.tone, before && after ? `${before.score} → ${after.score}` : ai ? String(ai.score) : "—");
+  const c = v.check;
+  if (c === "pending") set("sum-mean", "", "…");
+  else if (c) set("sum-mean", c.score >= 90 ? "ok" : c.score >= 75 ? "warn" : "bad", `${c.score}/100`);
+  else set("sum-mean", "", "—");
+  if (kept == null) set("sum-facts", "", total ? `${total} to check` : "—");
+  else set("sum-facts", kept === total ? "ok" : "bad", `${kept}/${total} kept`);
 }
 
 function renderMeaning(v) {
@@ -452,6 +479,7 @@ function restore(h) {
   if (h.settings) {
     setSeg("tone", h.settings.tone); setSeg("strength", h.settings.strength);
     if (h.settings.locked) $("locked").value = h.settings.locked.join(", ");
+    showModeDesc(); showLockCount();
   }
   setSeg("versions", String(Math.min(3, Math.max(1, h.versions.length))));
   state = { source: h.source, versions: h.versions.map((v) => ({ ...v, status: "done" })), active: 0, example: false, tab: "result" };
@@ -492,6 +520,7 @@ document.querySelectorAll("[data-theme-choice]").forEach((b) => b.addEventListen
 
 // ---------- Boot with the example loaded ----------
 input.value = EXAMPLE_IN;
+showModeDesc(); showLockCount();
 syncInput();
 renderAll();
 renderHistory();
