@@ -110,3 +110,21 @@ test("sends purpose and sample", { skip }, async () => {
   assert.equal(calls[0].sample, "This is how I write.");
   await page.close();
 });
+
+const statusText = (page) => page.$eval("#status", (el) => el.textContent);
+
+test("reads text from a PDF", { skip }, async () => {
+  const { page } = await openPage([CASUAL_EN]);
+  await page.setInputFiles("#file", "tests/fixtures/sample.pdf");
+  await page.waitForFunction(() => /Loaded|PDF|support/.test(document.getElementById("status").textContent));
+  assert.equal((await page.inputValue("#input")).trim(), "Hello from a PDF.", await statusText(page));
+  await page.close();
+});
+
+test("explains a PDF with no text layer", { skip }, async () => {
+  const { page } = await openPage([CASUAL_EN]);
+  await page.setInputFiles("#file", "tests/fixtures/scanned.pdf");
+  await page.waitForFunction(() => /Loaded|PDF|support/.test(document.getElementById("status").textContent));
+  assert.equal(await statusText(page), "No text was found in this PDF. It may be a scanned image.");
+  await page.close();
+});
