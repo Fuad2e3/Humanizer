@@ -34,6 +34,7 @@ export async function openPage(responses) {
     calls.push(body);
     const text = responses[Math.min(calls.length - 1, responses.length - 1)];
     if (text === null) return; // never answers
+    if (typeof text === "object") return r.fulfill({ contentType: "application/x-ndjson", body: JSON.stringify({ t: text.partial }) + "\n" }); // cut off: no done line
     r.fulfill({ contentType: "application/x-ndjson", body: ndjson(text) });
   });
   await page.goto(BASE);
@@ -135,5 +136,14 @@ test("downloads the result as a .docx", { skip }, async () => {
   await finished(page);
   const [download] = await Promise.all([page.waitForEvent("download"), page.click("#download")]);
   assert.match(download.suggestedFilename(), /^humanized-\d{4}-\d{2}-\d{2}\.docx$/);
+  await page.close();
+});
+
+test("a cut-off retry does not replace a complete first version", { skip }, async () => {
+  const { page, calls } = await openPage([STOCK_AI_EN, { partial: CASUAL_EN }]);
+  await humanize(page);
+  await finished(page);
+  assert.equal(calls.length, 2);
+  assert.equal(await outputText(page), norm(STOCK_AI_EN));
   await page.close();
 });

@@ -112,6 +112,6 @@ Runs the unit tests and a browser test of the page (with the API mocked, so no k
 
 ## Notes
 
-- Each rewrite makes two Claude calls (rewrite and meaning check), so 3 versions cost three times as much as 1. An automatic second try adds one more rewrite call for that version. The meaning check and sentence options use the cheaper `CLAUDE_FAST_MODEL`. On a public site, keep `RATE_LIMIT_PER_MIN` low. On Vercel the limit is counted per server instance, so use Vercel Firewall if you need a strict limit.
+- Each rewrite makes two Claude calls (rewrite and meaning check), so 3 versions cost three times as much as 1. An automatic second try adds one more rewrite call for that version. The meaning check and sentence options use the cheaper `CLAUDE_FAST_MODEL`. Automatic second tries also count toward `RATE_LIMIT_PER_MIN`, so one run with 3 versions can use up to 9 requests; raise the limit if visitors hit it. On a public site, keep `RATE_LIMIT_PER_MIN` low. On Vercel the limit is counted per server instance, so use Vercel Firewall if you need a strict limit.
 - If Claude declines a request, it is retried on another model automatically.
 - No tool can guarantee passing AI detectors. The goal is to make text read better and more naturally.
