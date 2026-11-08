@@ -54,6 +54,14 @@ Open http://localhost:3000
 
 The page detects which setup it is running in. With a server it uses the server; without one it asks for an API key.
 
+## Updating the site
+
+After changing anything in `public/`, run this before you commit so visitors' browsers load the new files instead of cached ones:
+
+```bash
+npm run bump
+```
+
 ## Settings (environment variables)
 
 | Name | Default | Purpose |

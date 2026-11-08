@@ -6,7 +6,8 @@
   "private": true,
   "scripts": {
     "start": "node --env-file-if-exists=.env server.js",
-    "build:vendor": "esbuild scripts/sdk-entry.mjs --bundle --format=esm --minify --platform=browser --outfile=public/vendor/anthropic.js"
+    "build:vendor": "esbuild scripts/sdk-entry.mjs --bundle --format=esm --minify --platform=browser --outfile=public/vendor/anthropic.js",
+    "bump": "node scripts/bump-version.mjs"
   },
   "engines": {
     "node": ">=22"
