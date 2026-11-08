@@ -3,7 +3,7 @@ import { parseOptions, streamRewrite, describeError, allow, clientIp, isConfigur
 // POST { text, tone, strength, lang, locked[], variant } -> NDJSON stream of {"t": "..."} lines, then {"done": true, "stop": "..."}
 export default async function handler(req, res) {
   if (req.method !== "POST") { res.statusCode = 405; res.setHeader("Allow", "POST"); return res.end(); }
-  if (!allow(clientIp(req))) return sendError(res, 429, "Ek minute e onek beshi request. Ektu opekkha korun.");
+  if (!allow(clientIp(req))) return sendError(res, 429, "Too many requests in the last minute. Please wait a moment.");
 
   if (!isConfigured()) return sendError(res, 503, NOT_CONFIGURED);
 

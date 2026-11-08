@@ -1,5 +1,5 @@
 // Rewrite history, kept only in this browser (localStorage).
-const KEY = "manush-lekha-history";
+const KEY = "humanizer-history";
 const MAX = 30;
 
 export function loadHistory() {

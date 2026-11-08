@@ -1,88 +1,87 @@
-# Manush Lekha: Humanizer
+# Humanizer
 
-AI diye lekha text ke manusher moto natural kore rewrite kore. Kintu mane, number ar naam bodlay na. বাংলা, English ar Banglish, teen tai chole.
+Rewrites AI-generated text so it reads like a person wrote it, while keeping its meaning, numbers and names the same. Works with English, Bangla and Banglish.
 
 ## Features
 
-| Feature | Ki kore |
+| Feature | What it does |
 |---|---|
-| AI detection score | Rewrite er age ar pore lekha koto ta "AI er moto" lage, meter e dekhay, ar keno lage sheta-o bole. Browser ei lekhar pattern dekhe hishab kore, tai eta estimate, guarantee na |
-| 3 ta mode | Halka (shudhu polish), Shadharon (sentence notun kore), Gobhir (puro lekha notun kore sajay) |
-| 3 ta version | Ek click e 1-3 ta alada rewrite, protita'r nijer score soho |
-| Word limit | Free te ekbare 500 word (`FREE_WORD_LIMIT` diye bodlano jay). Nijer key diye GitHub Pages e 3,000 word |
-| File upload | .txt, .md ba Word (.docx) file. Button diye ba editor e tene ana jay. Browser ei pora hoy |
-| History | Shesh 30 ta rewrite browser e save thake. Kholo, copy, muchhe felo |
-| Mane check | Claude original ar notun lekha milie 0-100 score dey, ki harie geche sheta bole |
-| Number o word lock | Number ar locked word hubohu ache kina ✓/✗ diye dekhay |
-| Landing page | Features, review, pricing, FAQ section |
+| AI detection score | Shows how AI-like the text looks before and after the rewrite, on a meter, and explains why. It is computed in the browser from writing patterns, so it is an estimate, not a guarantee |
+| 3 modes | Light (polish only), Balanced (rewrites sentences), Deep (restructures the whole text) |
+| Up to 3 versions | One click gives 1 to 3 different rewrites, each with its own score |
+| Word limit | 500 words per rewrite on the free tier (set with `FREE_WORD_LIMIT`). 3,000 words when visitors use their own key on GitHub Pages |
+| File upload | .txt, .md and Word (.docx) files, by button or drag and drop. Files are read in the browser |
+| History | The last 30 rewrites are saved in the browser and can be reopened, copied or deleted |
+| Meaning check | Claude compares the rewrite with the original, gives a 0-100 score and lists anything lost or added |
+| Number and word lock | Checks that every number and locked word is still there, marked ✓ or ✗ |
+| Pricing section | Free, Pro and Team plans |
 
-### Launch er age
+### Before launch
 
-- **Review section:** `public/index.html` e "User ra ki bolche" section er review gulo sample. Asol user der review diye bodle din.
-- **Pricing:** Pro ar Team plan e "Shiggiri ashche" button dewa ache. Payment (bKash, SSLCommerz, Stripe) ar user account ekhono banano hoyni, tai Pro er 3,000 word limit ekhono kaj kore na.
+- **Pricing:** Pro and Team show a "Coming soon" button. Payments and user accounts are not built yet, so the Pro 3,000-word limit does not apply to anyone yet. Prices are in Bangladeshi taka (৳); change them in `public/index.html`.
 
-## Website kothay chalano jay
+## Where to run it
 
-### 1. GitHub Pages (free, server lage na)
+### 1. GitHub Pages (free, no server)
 
-Website: https://fuad2e3.github.io/Humanizer/
+Site: https://fuad2e3.github.io/Humanizer/
 
-Ekhane kono server nei. Tai je use korbe, she page er upore nijer Claude API key bosabe ([key kothay pabo](https://console.anthropic.com/settings/keys)). Key ta tar browser theke sorasori Anthropic e jay, onno kothao jay na. "Ei browser e mone rakho" tick dile porer bar abar key dite hoy na.
+There is no server here, so each visitor enters their own Claude API key ([get one here](https://console.anthropic.com/settings/keys)). The key goes straight from their browser to Anthropic and nowhere else. "Remember in this browser" saves it for next time.
 
-Chalu korte: repo **Settings → Pages → Source: Deploy from a branch → `main` / `(root)` → Save**.
+To turn it on: repo **Settings → Pages → Source: Deploy from a branch → `main` / `(root)` → Save**.
 
-### 2. Vercel (visitor er key lage na)
+### 2. Vercel (no key needed for visitors)
 
-Server e apnar key thake, tai visitor ra key chhara-i use korte pare. Khoroch apnar account theke jay.
+Your key stays on the server, so visitors can use the site without a key. API costs go to your account.
 
-1. https://vercel.com e GitHub diye login korun, tarpor **Add New → Project** theke ei repo ta import korun.
-2. **Environment Variables** e `ANTHROPIC_API_KEY` add korun.
-3. **Deploy** chapun.
+1. Sign in at https://vercel.com with GitHub, then import this repo from **Add New → Project**.
+2. Add `ANTHROPIC_API_KEY` under **Environment Variables**.
+3. Click **Deploy**.
 
-### 3. Nijer computer e
+### 3. On your own computer
 
-Node.js 22 ba tar beshi version lagbe.
+Requires Node.js 22 or newer.
 
 ```bash
 npm install
-cp .env.example .env     # tarpor .env file e ANTHROPIC_API_KEY bosan
+cp .env.example .env     # then put your ANTHROPIC_API_KEY in .env
 npm start
 ```
 
-Browser e khulun: http://localhost:3000
+Open http://localhost:3000
 
-Page nije bujhe ney kon mode e cholche. Server thakle server diye kaj kore. Na thakle API key chaay.
+The page detects which setup it is running in. With a server it uses the server; without one it asks for an API key.
 
-## Settings (environment variable)
+## Settings (environment variables)
 
-| Name | Default | Kaj |
+| Name | Default | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | (lagbei) | Claude API key |
-| `CLAUDE_MODEL` | `claude-opus-5-5` | Kon model diye rewrite hobe |
-| `RATE_LIMIT_PER_MIN` | `30` | Ek IP theke minute e koto ta request kora jabe (3 version = 6 ta request) |
-| `FREE_WORD_LIMIT` | `500` | Ekbare koto word deya jabe |
-| `PORT` | `3000` | Local server er port |
+| `ANTHROPIC_API_KEY` | (required) | Claude API key |
+| `CLAUDE_MODEL` | `claude-opus-5-5` | Model used for rewrites and meaning checks |
+| `RATE_LIMIT_PER_MIN` | `30` | Requests allowed per IP per minute (3 versions = 6 requests) |
+| `FREE_WORD_LIMIT` | `500` | Maximum words per rewrite |
+| `PORT` | `3000` | Port for the local server |
 
-## Folder
+## Files
 
-- `public/index.html`: website er page
-- `public/app.js`: page er mul code
-- `public/styles.css`: design
-- `public/detect.js`: AI score hishab
-- `public/files.js`: .txt/.docx file pora
-- `public/history.js`: history save
-- `public/text.js`: text helper (highlight, diff)
-- `public/core.js`: prompt ar niyom, server ar browser duijon-i eta use kore
-- `public/vendor/anthropic.js`: browser er jonno Claude SDK (`npm run build:vendor` diye banano)
-- `index.html`: GitHub Pages ke `public/` e niye jay
-- `api/rewrite.js`: lekha rewrite kore, stream kore pathay
-- `api/check.js`: mane thik ache kina check kore
-- `api/health.js`: page ke janay j server ache
-- `lib/humanize.js`: Claude er prompt ar API call
-- `server.js`: local e chalanor server
-- `claude-artifact/`: claude.ai artifact version, server chhara chole
+- `public/index.html`: the page
+- `public/app.js`: main page logic
+- `public/styles.css`: styles
+- `public/core.js`: prompts and options, shared by the server and the browser
+- `public/detect.js`: AI score estimate
+- `public/files.js`: reads .txt and .docx files
+- `public/history.js`: saves history in the browser
+- `public/text.js`: text helpers (highlighting, diff)
+- `public/vendor/anthropic.js`: Claude SDK bundled for the browser (`npm run build:vendor`)
+- `api/rewrite.js`: streams a rewrite
+- `api/check.js`: runs the meaning check
+- `api/health.js`: tells the page that a server is present
+- `lib/humanize.js`: Claude API calls on the server
+- `server.js`: local server
+- `index.html`: sends GitHub Pages visitors to `public/`
 
-## Note
+## Notes
 
-- API call er khoroch apnar Anthropic account theke jabe. Public e chharle `RATE_LIMIT_PER_MIN` kom rakhun. Vercel e ei limit protita instance e alada alada gona hoy, tai kora limit lagle Vercel Firewall use korun.
-- Kono tool AI detector pass korar guarantee dite pare na. Ei project er uddeshsho lekhake porte bhalo ar natural kora.
+- Each rewrite makes two Claude calls (rewrite and meaning check), so 3 versions cost three times as much as 1. On a public site, keep `RATE_LIMIT_PER_MIN` low. On Vercel the limit is counted per server instance, so use Vercel Firewall if you need a strict limit.
+- If Claude declines a request, it is retried on another model automatically.
+- No tool can guarantee passing AI detectors. The goal is to make text read better and more naturally.
