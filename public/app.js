@@ -1,10 +1,10 @@
-import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611080935";
-import { humanizeLocal, sentenceOptionsLocal } from "./rules.js?v=202611080935";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080935";
-import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611080935";
-import { readTextFile, ACCEPT } from "./files.js?v=202611080935";
-import { makeDocx } from "./docx-export.js?v=202611080935";
-import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080935";
+import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611080937";
+import { humanizeLocal, sentenceOptionsLocal } from "./rules.js?v=202611080937";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080937";
+import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611080937";
+import { readTextFile, ACCEPT } from "./files.js?v=202611080937";
+import { makeDocx } from "./docx-export.js?v=202611080937";
+import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080937";
 
 const $ = (id) => document.getElementById(id);
 const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
@@ -134,7 +134,7 @@ $("clear").addEventListener("click", () => { input.value = ""; syncInput(); rend
 function setBadge(el, r) {
   el.className = "ai-badge" + (r ? " " + r.tone : "");
   el.textContent = r ? `AI ${r.score}%` : "AI —";
-  el.title = r ? `AI score estimate: ${r.label}` : `The AI score needs at least ${MIN_WORDS} words`;
+  el.title = r ? `AI pattern score: ${r.label}` : `The AI pattern score needs at least ${MIN_WORDS} words`;
 }
 
 // Empty-state actions
