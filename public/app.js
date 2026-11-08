@@ -27,7 +27,15 @@ const cur = () => state.versions[state.active] || { text: "", check: null, statu
 let wordLimit = FREE_WORD_LIMIT;
 
 const fail = (msg) => { const e = new Error(msg); e.userMessage = msg; return e; };
-const setStatus = (text, err = false) => { status.className = err ? "status err" : "status"; status.textContent = text; };
+// Messages appear as a small toast at the bottom; errors stay a little longer.
+let toastTimer = null;
+function setStatus(text, err = false) {
+  clearTimeout(toastTimer);
+  status.textContent = text;
+  status.className = "toast show" + (err ? " err" : "");
+  const busy = goBtn.disabled && !err;
+  if (!busy) toastTimer = setTimeout(() => status.classList.remove("show"), err ? 6000 : 3500);
+}
 
 // ---------- Settings ----------
 const seg = (id) => $(id).querySelector('[aria-pressed="true"]').dataset.v;
@@ -90,6 +98,7 @@ function syncInput() {
   $("wc-bar").style.width = Math.min(100, (n / wordLimit) * 100) + "%";
   $("wc-text").parentElement.classList.toggle("over", n > wordLimit);
   setBadge($("in-ai"), aiScore(input.value));
+  $("empty").hidden = input.value.length > 0;
 }
 input.addEventListener("input", () => { syncInput(); renderChecks(); });
 input.addEventListener("scroll", () => { backdropInner.style.transform = `translateY(${-input.scrollTop}px)`; });
@@ -101,6 +110,17 @@ function setBadge(el, r) {
   el.textContent = r ? `AI ${r.score}%` : "AI —";
   el.title = r ? `AI score estimate: ${r.label}` : `The AI score needs at least ${MIN_WORDS} words`;
 }
+
+// Empty-state actions
+$("paste").addEventListener("click", async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text.trim()) { setStatus("The clipboard is empty."); return; }
+    input.value = text; syncInput(); renderChecks(); input.focus();
+  } catch { input.focus(); setStatus("Press Ctrl+V (or ⌘V) to paste."); }
+});
+$("upload2").addEventListener("click", () => $("file").click());
+$("try-example").addEventListener("click", () => { input.value = EXAMPLE_IN; syncInput(); renderChecks(); input.focus(); });
 
 // ---------- Output ----------
 function renderOutput() {
@@ -118,6 +138,8 @@ function renderOutput() {
   moveThumb($("tab-result").parentElement);
   $("use-version").hidden = !has || state.example || v.status === "streaming";
   setBadge($("out-ai"), has && v.status !== "streaming" ? aiScore(v.text) : null);
+  $("copy").classList.toggle("accent", has && !state.example && v.status !== "streaming");
+  $("report-for").textContent = state.versions.length > 1 ? `for Version ${state.active + 1}` : "";
 }
 $("tab-result").addEventListener("click", () => { state.tab = "result"; renderOutput(); });
 $("tab-diff").addEventListener("click", () => { state.tab = "diff"; renderOutput(); });
@@ -360,6 +382,8 @@ async function run() {
   setStatus(count > 1 ? `Writing ${count} versions…` : "Thinking…");
   state = { source: src, versions: Array.from({ length: count }, () => ({ text: "", check: null, status: "streaming" })), active: 0, example: false, tab: "result" };
   renderAll();
+  // On a phone the result sits below the input, so bring it into view.
+  if (matchMedia("(max-width: 760px)").matches) output.closest(".sheet").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
 
   const rewrite = mode === "server" ? serverRewrite : browserRewrite;
   const check = mode === "server" ? serverCheck : browserCheck;

@@ -52,7 +52,6 @@
     Locked <span class="mini-count" id="lock-count">0</span>
   </button>
   <p class="sr-only" id="mode-desc" aria-live="polite"></p>
-  <p class="status" id="status" role="status"></p>
 </div>
 
 <div class="opts" id="opts" hidden>
@@ -82,7 +81,15 @@
     </div>
     <div class="editor" id="editor">
       <div class="backdrop" aria-hidden="true"><div id="backdrop-inner"></div></div>
-      <textarea id="input" aria-label="Original text" spellcheck="false" placeholder="Paste your text here, or drop a .txt or .docx file"></textarea>
+      <textarea id="input" aria-label="Original text" spellcheck="false"></textarea>
+      <div class="empty" id="empty" hidden>
+        <p>Paste or type the text you want to humanize</p>
+        <div class="empty-actions">
+          <button type="button" class="btn" id="paste"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Paste</button>
+          <button type="button" class="btn" id="upload2"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>Upload file</button>
+        </div>
+        <button type="button" class="link-btn" id="try-example">Try an example</button>
+      </div>
       <div class="drop" id="drop" hidden><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Drop the file</span></div>
     </div>
     <div class="sheet-foot">
@@ -121,6 +128,7 @@
   </section>
 
   <aside class="side" id="report" aria-label="Quality report">
+    <p class="side-title">Report <span id="report-for"></span></p>
     <div class="block">
       <div class="block-head"><h3>AI score</h3><span class="pill idle" id="ai-pill">—</span></div>
       <div class="meter-row"><span class="mlabel">Before</span><div class="meter" aria-hidden="true"><i id="ai-before-bar"></i></div><span class="meter-num" id="ai-before-num">—</span></div>
@@ -220,6 +228,8 @@
   </div>
   <div class="drawer-foot"><button type="button" class="btn" id="history-clear">Clear all</button></div>
 </dialog>
+
+<div class="toast" id="status" role="status" aria-live="polite"></div>
 
 <script type="module" src="app.js"></script>
 </body>
