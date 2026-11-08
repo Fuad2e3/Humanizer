@@ -1,5 +1,5 @@
 // Text helpers: AI phrase marking, counts, sentence rhythm and a word diff.
-import { AI_PHRASES, countWords } from "./core.js?v=202611080821";
+import { AI_PHRASES, countWords } from "./core.js?v=202611080822";
 
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const AI_RE = new RegExp(AI_PHRASES.map((p) => (/^[\x00-\x7f]+$/.test(p) ? "\\b" + esc(p) + "\\b" : esc(p))).join("|"), "gi");
