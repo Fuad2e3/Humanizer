@@ -263,3 +263,26 @@ input[type="password"] { font-family: var(--f-mono); font-size: 13px }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important } html { scroll-behavior: auto } }
 @media (max-width: 440px) { .subbar .seg button { padding: 0 6px; font-size: 12.5px; gap: 5px } }
+
+/* ---- Placement pass ---- */
+.toast { position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px)); z-index: 20; max-width: min(520px, calc(100vw - 32px));
+  transform: translate(-50%, 12px); opacity: 0; pointer-events: none; padding: 10px 16px; border-radius: 12px; font-size: 14px; font-weight: 500;
+  background: var(--ink); color: var(--bg); box-shadow: 0 12px 32px -12px rgba(0, 0, 0, .45); transition: opacity .25s var(--ease), transform .25s var(--ease) }
+.toast.show { opacity: 1; transform: translate(-50%, 0) }
+.toast.err { background: var(--bad); color: #fff }
+
+.empty { position: absolute; inset: 0; z-index: 1; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 20px; text-align: center; pointer-events: none }
+.empty p { margin: 0; color: var(--faint); font-size: 14.5px }
+.empty-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center }
+.empty button { pointer-events: auto }
+.empty .link-btn { color: var(--accent); text-decoration: none; font-weight: 500 }
+.editor textarea:focus + .empty, .editor:has(textarea:focus) .empty p { color: var(--faint) }
+
+.btn.accent { border-color: var(--accent); color: var(--accent); background: var(--accent-soft) }
+.btn.accent:hover:not(:disabled) { border-color: var(--accent) }
+
+.side-title { margin: 0; padding: 0 0 4px; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--faint) }
+.side-title span { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--accent); margin-left: 4px }
+@media (max-width: 1180px) { .side-title { grid-column: 1 / -1; padding-top: 8px } }
+.toast { top: calc(64px + env(safe-area-inset-top, 0px)); bottom: auto; transform: translate(-50%, -10px) }
+.toast.show { transform: translate(-50%, 0) }
