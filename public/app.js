@@ -40,7 +40,7 @@ function setStatus(text, err = false) {
 // ---------- Settings ----------
 const seg = (id) => $(id).querySelector('[aria-pressed="true"]').dataset.v;
 const setSeg = (id, v) => { $(id).querySelectorAll("button[data-v]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === v))); moveThumb($(id)); };
-["tone", "strength", "versions"].forEach((id) => $(id).addEventListener("click", (e) => {
+["strength", "versions"].forEach((id) => $(id).addEventListener("click", (e) => {
   const b = e.target.closest("button[data-v]"); if (b) setSeg(id, b.dataset.v);
 }));
 // ---------- Motion helpers ----------
@@ -375,7 +375,7 @@ async function run() {
   if (n > wordLimit) { setStatus(`You can rewrite up to ${wordLimit} words at a time. This text has ${n}. Please split it into smaller parts.`, true); return; }
 
   const count = Number(seg("versions"));
-  const settings = { tone: seg("tone"), strength: seg("strength"), lang: "en", locked: lockedTerms() };
+  const settings = { tone: $("tone").value, strength: seg("strength"), lang: "en", locked: lockedTerms() };
   ctl = new AbortController();
   const signal = ctl.signal;
   setBusy(true);
@@ -521,7 +521,7 @@ function renderHistory(list = loadHistory()) {
 function restore(h) {
   input.value = h.source; syncInput();
   if (h.settings) {
-    setSeg("tone", h.settings.tone); setSeg("strength", h.settings.strength);
+    $("tone").value = h.settings.tone || "natural"; setSeg("strength", h.settings.strength);
     if (h.settings.locked) $("locked").value = h.settings.locked.join(", ");
     showModeDesc(); showLockCount();
   }
