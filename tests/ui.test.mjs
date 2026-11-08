@@ -98,3 +98,15 @@ test("sends the chosen language", { skip }, async () => {
   assert.equal(calls[0].lang, "bn");
   await page.close();
 });
+
+test("sends purpose and sample", { skip }, async () => {
+  const { page, calls } = await openPage([CASUAL_EN]);
+  await page.selectOption("#purpose", "essay");
+  await page.click("#opt-toggle");
+  await page.fill("#sample", "This is how I write.");
+  await humanize(page);
+  await finished(page);
+  assert.equal(calls[0].purpose, "essay");
+  assert.equal(calls[0].sample, "This is how I write.");
+  await page.close();
+});
