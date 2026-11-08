@@ -52,7 +52,7 @@ async function docxText(buf) {
 }
 
 // Minimal zip reader: finds one entry through the central directory and inflates it.
-async function unzipEntry(buf, wanted) {
+export async function unzipEntry(buf, wanted) {
   const v = new DataView(buf);
   let eocd = -1;
   for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) {

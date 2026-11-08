@@ -128,3 +128,12 @@ test("explains a PDF with no text layer", { skip }, async () => {
   assert.equal(await statusText(page), "No text was found in this PDF. It may be a scanned image.");
   await page.close();
 });
+
+test("downloads the result as a .docx", { skip }, async () => {
+  const { page } = await openPage([CASUAL_EN]);
+  await humanize(page);
+  await finished(page);
+  const [download] = await Promise.all([page.waitForEvent("download"), page.click("#download")]);
+  assert.match(download.suggestedFilename(), /^humanized-\d{4}-\d{2}-\d{2}\.docx$/);
+  await page.close();
+});

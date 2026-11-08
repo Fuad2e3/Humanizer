@@ -1,8 +1,9 @@
-import { parseOptions, rewriteRequest, checkRequest, readCheck, parseSentence, sentenceRequest, readSentence, describeError, FREE_WORD_LIMIT, OWN_KEY_WORD_LIMIT } from "./core.js?v=202611080821";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080821";
-import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611080821";
-import { readTextFile, ACCEPT } from "./files.js?v=202611080821";
-import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080821";
+import { parseOptions, rewriteRequest, checkRequest, readCheck, parseSentence, sentenceRequest, readSentence, describeError, FREE_WORD_LIMIT, OWN_KEY_WORD_LIMIT } from "./core.js?v=202611080822";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080822";
+import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611080822";
+import { readTextFile, ACCEPT } from "./files.js?v=202611080822";
+import { makeDocx } from "./docx-export.js?v=202611080822";
+import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080822";
 
 const $ = (id) => document.getElementById(id);
 const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
@@ -276,7 +277,7 @@ $("forget").addEventListener("click", () => { $("apikey").value = ""; $("remembe
 async function browserClient() {
   const apiKey = $("apikey").value.trim();
   if (!apiKey) { $("apikey").focus(); throw fail("Enter your Claude API key above first."); }
-  if (!Anthropic) Anthropic = (await import("./vendor/anthropic.js?v=202611080821")).default;
+  if (!Anthropic) Anthropic = (await import("./vendor/anthropic.js?v=202611080822")).default;
   return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 }
 const toUserError = (e, signal, partial) => {
@@ -539,6 +540,14 @@ $("copy").addEventListener("click", async () => {
     label.textContent = "Selected, press Ctrl+C";
   }
   setTimeout(() => { label.textContent = "Copy"; }, 2000);
+});
+$("download").addEventListener("click", () => {
+  const text = cur().text; if (!text) return;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(makeDocx(text));
+  a.download = `humanized-${new Date().toISOString().slice(0, 10)}.docx`;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 });
 $("use-version").textContent = "Edit this";
 $("use-version").title = "Move this rewrite into the input to edit or humanize it again";
