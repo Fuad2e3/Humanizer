@@ -1,6 +1,6 @@
 // AI-likeness estimate, computed in the browser from writing patterns. It is a rough guide,
 // not a real AI detector: it reads the same signals people notice when text "sounds like AI".
-import { findAI, sentences, words, spread } from "./text.js?v=202611080536";
+import { findAI, sentences, words, spread } from "./text.js?v=202611080814";
 
 export const MIN_WORDS = 40;
 

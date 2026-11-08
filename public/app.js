@@ -1,8 +1,8 @@
-import { parseOptions, rewriteRequest, checkRequest, readCheck, parseSentence, sentenceRequest, readSentence, describeError, FREE_WORD_LIMIT, OWN_KEY_WORD_LIMIT } from "./core.js?v=202611080536";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080536";
-import { aiScore, MIN_WORDS } from "./detect.js?v=202611080536";
-import { readTextFile, ACCEPT } from "./files.js?v=202611080536";
-import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080536";
+import { parseOptions, rewriteRequest, checkRequest, readCheck, parseSentence, sentenceRequest, readSentence, describeError, FREE_WORD_LIMIT, OWN_KEY_WORD_LIMIT } from "./core.js?v=202611080814";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080814";
+import { aiScore, MIN_WORDS } from "./detect.js?v=202611080814";
+import { readTextFile, ACCEPT } from "./files.js?v=202611080814";
+import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080814";
 
 const $ = (id) => document.getElementById(id);
 const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
@@ -274,7 +274,7 @@ $("forget").addEventListener("click", () => { $("apikey").value = ""; $("remembe
 async function browserClient() {
   const apiKey = $("apikey").value.trim();
   if (!apiKey) { $("apikey").focus(); throw fail("Enter your Claude API key above first."); }
-  if (!Anthropic) Anthropic = (await import("./vendor/anthropic.js?v=202611080536")).default;
+  if (!Anthropic) Anthropic = (await import("./vendor/anthropic.js?v=202611080814")).default;
   return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 }
 const toUserError = (e, signal, partial) => {

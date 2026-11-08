@@ -1,6 +1,8 @@
 // Shared by the server (lib/humanize.js) and the browser (index.html): prompts, options and checks.
 
 export const MODEL_DEFAULT = "claude-opus-5-5";
+// Smaller, cheaper model for the meaning check and sentence options.
+export const MODEL_FAST = "claude-haiku-5-5";
 export const MAX_INPUT_CHARS = 30000;
 export const FREE_WORD_LIMIT = 500;
 export const OWN_KEY_WORD_LIMIT = 3000;
@@ -104,7 +106,7 @@ const CHECK_SCHEMA = {
 };
 
 // Builds the Messages API request that compares meaning.
-export function checkRequest(original, rewrite, model = MODEL_DEFAULT) {
+export function checkRequest(original, rewrite, model = MODEL_FAST) {
   return {
     model,
     max_tokens: 8000,
@@ -167,7 +169,7 @@ export function parseSentence(body) {
 }
 
 // Builds the request for three alternatives to one sentence.
-export function sentenceRequest({ sentence, context, tone, locked }, model = MODEL_DEFAULT) {
+export function sentenceRequest({ sentence, context, tone, locked }, model = MODEL_FAST) {
   return {
     model,
     max_tokens: 4000,
