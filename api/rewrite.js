@@ -1,6 +1,6 @@
-import { parseOptions, streamRewrite, describeError, allow, clientIp, isConfigured, NOT_CONFIGURED } from "../lib/humanize.js";
+import { parseOptions, streamRewrite, describeError, allow, clientIp, isConfigured, NOT_CONFIGURED, WORD_LIMIT } from "../lib/humanize.js";
 
-// POST { text, tone, strength, lang, locked[] } -> NDJSON stream of {"t": "..."} lines, then {"done": true, "stop": "..."}
+// POST { text, tone, strength, lang, locked[], variant } -> NDJSON stream of {"t": "..."} lines, then {"done": true, "stop": "..."}
 export default async function handler(req, res) {
   if (req.method !== "POST") { res.statusCode = 405; res.setHeader("Allow", "POST"); return res.end(); }
   if (!allow(clientIp(req))) return sendError(res, 429, "Ek minute e onek beshi request. Ektu opekkha korun.");
@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   if (!isConfigured()) return sendError(res, 503, NOT_CONFIGURED);
 
   let opts;
-  try { opts = parseOptions(req.body); } catch (err) { return sendError(res, ...describeError(err)); }
+  try { opts = parseOptions(req.body, { maxWords: WORD_LIMIT }); } catch (err) { return sendError(res, ...describeError(err)); }
 
   const ctl = new AbortController();
   res.on("close", () => { if (!res.writableEnded) ctl.abort(); });

@@ -1,7 +1,12 @@
 // Shared by the server (lib/humanize.js) and the browser (index.html): prompts, options and checks.
 
 export const MODEL_DEFAULT = "claude-opus-5-5";
-export const MAX_INPUT_CHARS = 12000;
+export const MAX_INPUT_CHARS = 30000;
+export const FREE_WORD_LIMIT = 500;
+export const OWN_KEY_WORD_LIMIT = 3000;
+export const MAX_VERSIONS = 3;
+
+export const countWords = (t) => (t.trim().match(/\S+/g) || []).length;
 export const FALLBACK = { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" };
 
 // Phrases that make text read as machine-written.
@@ -27,6 +32,12 @@ const STRENGTH = {
   medium: "Rewrite sentences freely, but keep the paragraph structure and the order of ideas.",
   strong: "Restructure freely for flow, merging or splitting sentences as needed, while keeping every idea."
 };
+// Extra direction per version, so 2-3 versions come out different from each other.
+const VARIANTS = [
+  "",
+  "This is an alternative version: choose a noticeably different sentence structure and word choice from the most obvious rewrite.",
+  "This is a third alternative: use a warmer, more conversational rhythm with varied sentence openings, still within the chosen tone."
+];
 const LANGS = {
   same: "the same language and script as the input text",
   en: "English",
@@ -37,10 +48,12 @@ const LANGS = {
 export class InputError extends Error {}
 
 // Checks a rewrite request and returns clean options.
-export function parseOptions(body) {
+export function parseOptions(body, { maxWords = FREE_WORD_LIMIT } = {}) {
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) throw new InputError("Kono lekha pawa jayni.");
   if (text.length > MAX_INPUT_CHARS) throw new InputError(`Lekha ta ${MAX_INPUT_CHARS} character er beshi. Choto bhag kore din.`);
+  const n = countWords(text);
+  if (n > maxWords) throw new InputError(`Ekbare ${maxWords} word porjonto deya jay, apni diyechen ${n}. Choto bhag kore din.`);
   const pick = (v, table, def) => (Object.hasOwn(table, v) ? v : def);
   const locked = Array.isArray(body.locked)
     ? body.locked.filter((s) => typeof s === "string").map((s) => s.trim()).filter(Boolean).slice(0, 30).map((s) => s.slice(0, 80))
@@ -50,13 +63,14 @@ export function parseOptions(body) {
     tone: pick(body.tone, TONES, "natural"),
     strength: pick(body.strength, STRENGTH, "medium"),
     lang: pick(body.lang, LANGS, "same"),
+    variant: Number.isInteger(body.variant) && body.variant >= 0 && body.variant < VARIANTS.length ? body.variant : 0,
     locked
   };
 }
 
 // Builds the Messages API request for a rewrite.
 export function rewriteRequest(opts, model = MODEL_DEFAULT) {
-  const { tone, strength, lang, locked } = opts;
+  const { tone, strength, lang, locked, variant = 0 } = opts;
   return {
     model,
     max_tokens: 16000,
@@ -71,7 +85,7 @@ Rules:
 - Avoid filler phrases such as: ${AI_PHRASES.join(", ")}.
 - Do not use em-dashes.
 ${locked.length ? `- Keep these terms exactly as written: ${locked.join(", ")}.\n` : ""}- Write the output in ${LANGS[lang]}.
-- Reply with only the rewritten text. No preface, notes or quotes around it.`,
+- Reply with only the rewritten text. No preface, notes or quotes around it.${VARIANTS[variant] ? "\n- " + VARIANTS[variant] : ""}`,
     messages: [{ role: "user", content: opts.text }],
     ...FALLBACK
   };
