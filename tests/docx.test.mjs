@@ -17,3 +17,9 @@ test("has the three required parts", async () => {
   assert.ok((await unzipEntry(buf, "[Content_Types].xml")).includes("wordprocessingml"));
   assert.ok((await unzipEntry(buf, "_rels/.rels")).includes("word/document.xml"));
 });
+
+test("drops control characters that XML does not allow", async () => {
+  const xml = await unzipEntry(await makeDocx("line\u000Bbreak\u0001x\tok").arrayBuffer(), "word/document.xml");
+  assert.ok(!/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(xml));
+  assert.ok(xml.includes("\tok"));
+});
