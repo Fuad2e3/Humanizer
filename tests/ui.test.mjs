@@ -89,3 +89,12 @@ test("stop during retry keeps the first version", { skip }, async () => {
   assert.equal(err, false);
   await page.close();
 });
+
+test("sends the chosen language", { skip }, async () => {
+  const { page, calls } = await openPage([CASUAL_EN]);
+  await page.selectOption("#lang", "bn");
+  await humanize(page);
+  await finished(page);
+  assert.equal(calls[0].lang, "bn");
+  await page.close();
+});

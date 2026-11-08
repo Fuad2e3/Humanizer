@@ -83,7 +83,7 @@ export function parseOptions(body, { maxWords = FREE_WORD_LIMIT } = {}) {
     text,
     tone: pick(body.tone, TONES, "natural"),
     strength: pick(body.strength, STRENGTH, "medium"),
-    lang: pick(body.lang, LANGS, "en"),
+    lang: pick(body.lang, LANGS, "same"),
     feedback: Array.isArray(body.feedback) ? [...new Set(body.feedback.filter((k) => typeof k === "string" && Object.hasOwn(FEEDBACK, k)))].slice(0, 7) : [],
     variant: Number.isInteger(body.variant) && body.variant >= 0 && body.variant < VARIANTS.length ? body.variant : 0,
     locked
@@ -184,12 +184,12 @@ export function parseSentence(body) {
   const context = typeof body?.context === "string" ? body.context.trim().slice(0, MAX_INPUT_CHARS) : "";
   if (!sentence) throw new InputError("Pick a sentence to rewrite.");
   if (countWords(sentence) > MAX_SENTENCE_WORDS) throw new InputError(`That sentence is longer than ${MAX_SENTENCE_WORDS} words.`);
-  const base = parseOptions({ text: context || sentence, tone: body.tone, locked: body.locked }, { maxWords: Infinity });
-  return { sentence, context: base.text, tone: base.tone, locked: base.locked };
+  const base = parseOptions({ text: context || sentence, tone: body.tone, locked: body.locked, lang: body.lang }, { maxWords: Infinity });
+  return { sentence, context: base.text, tone: base.tone, locked: base.locked, lang: base.lang };
 }
 
 // Builds the request for three alternatives to one sentence.
-export function sentenceRequest({ sentence, context, tone, locked }, model = MODEL_FAST) {
+export function sentenceRequest({ sentence, context, tone, locked, lang = "same" }, model = MODEL_FAST) {
   return {
     model,
     max_tokens: 4000,
@@ -199,7 +199,7 @@ export function sentenceRequest({ sentence, context, tone, locked }, model = MOD
 - Keep the meaning, every fact, number and name. Fit the surrounding text so the paragraph still flows.
 - Tone: ${TONES[tone]}. Make the 3 options clearly different from each other and from the original.
 - Sound like a real person. Avoid filler phrases such as: ${AI_PHRASES.slice(0, 25).join(", ")}. Do not use em-dashes.
-${locked.length ? `- Keep these terms exactly as written: ${locked.join(", ")}.\n` : ""}- Write in English.`,
+${locked.length ? `- Keep these terms exactly as written: ${locked.join(", ")}.\n` : ""}- Write in ${LANGS[lang] || LANGS.same}.`,
     messages: [{ role: "user", content: `TEXT:\n${context}\n\nSENTENCE TO REWRITE:\n${sentence}` }],
     ...FALLBACK
   };

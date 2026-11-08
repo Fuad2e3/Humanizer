@@ -37,3 +37,14 @@ test("rewriteRequest adds feedback instructions", () => {
   const without = rewriteRequest(parseOptions({ text: "hi", feedback: [] }));
   assert.ok(!without.system.includes("last attempt"));
 });
+
+test("sentenceRequest writes in the chosen language", () => {
+  const bn = sentenceRequest(parseSentence({ sentence: "Hi there.", context: "Hi there.", lang: "bn" }));
+  assert.ok(bn.system.includes("Bangla, in Bengali script"));
+  const same = sentenceRequest(parseSentence({ sentence: "Hi there.", context: "Hi there." }));
+  assert.ok(same.system.includes("the same language and script as the input text"));
+});
+
+test("parseOptions keeps the input language by default", () => {
+  assert.equal(parseOptions({ text: "hi" }).lang, "same");
+});
