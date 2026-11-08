@@ -25,7 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=202611080817">
+<link rel="stylesheet" href="styles.css?v=202611080818">
 </head>
 <body>
 
@@ -96,6 +96,15 @@
           <option value="formal">Formal</option>
           <option value="academic">Academic</option>
           <option value="blog">Blog</option>
+        </select>
+      </label>
+      <label class="select" title="Output language">
+        <span class="sr-only">Output language</span>
+        <select id="lang">
+          <option value="same">Same as input</option>
+          <option value="en">English</option>
+          <option value="bn">বাংলা</option>
+          <option value="banglish">Banglish</option>
         </select>
       </label>
       <div class="seg seg-num" role="group" aria-label="Number of versions" id="versions">
@@ -204,6 +213,6 @@
 
 <div class="toast" id="status" role="status" aria-live="polite"></div>
 
-<script type="module" src="app.js?v=202611080817"></script>
+<script type="module" src="app.js?v=202611080818"></script>
 </body>
 </html>
