@@ -10,9 +10,9 @@ const status = $("status"), goBtn = $("go"), againBtn = $("again"), stopBtn = $(
 
 const EXAMPLE_IN = "In today's fast-paced world, social media plays a vital role in shaping how young people communicate. Moreover, it is important to note that platforms like Facebook and TikTok have fundamentally transformed the landscape of friendship. Furthermore, studies show that 62% of teenagers in Bangladesh use social media for more than 3 hours a day. In conclusion, social media is a double-edged sword that offers both opportunities and challenges.";
 const EXAMPLE_OUT = "Social media has changed how young people talk to each other. Facebook and TikTok? They've reshaped what friendship even looks like. In Bangladesh, studies show 62% of teenagers spend more than 3 hours a day on these apps. That's a lot of time. It brings real opportunities, and real problems too.";
-const EXAMPLE_CHECK = { score: 94, verdict: "Shob main idea ar fact ache; shudhu 'double-edged sword' kotha ta shohoj bhashay bola hoyeche.", missing: [], added: [] };
+const EXAMPLE_CHECK = { score: 94, verdict: "All the main ideas and facts are kept; only the 'double-edged sword' phrase is said more plainly.", missing: [], added: [] };
 
-const MODE_NAMES = { light: "Halka", medium: "Shadharon", strong: "Gobhir" };
+const MODE_NAMES = { light: "Light", medium: "Balanced", strong: "Deep" };
 const TONE_NAMES = { natural: "Natural", casual: "Casual", formal: "Formal", academic: "Academic", blog: "Blog" };
 
 // ---------- State ----------
@@ -55,7 +55,7 @@ $("clear").addEventListener("click", () => { input.value = ""; syncInput(); rend
 function setBadge(el, r) {
   el.className = "ai-badge" + (r ? " " + r.tone : "");
   el.textContent = r ? `AI ${r.score}%` : "AI —";
-  el.title = r ? `AI score estimate: ${r.label}` : `AI score er jonno ${MIN_WORDS}+ word lagbe`;
+  el.title = r ? `AI score estimate: ${r.label}` : `The AI score needs at least ${MIN_WORDS} words`;
 }
 
 // ---------- Output ----------
@@ -64,7 +64,7 @@ function renderOutput() {
   $("example-badge").hidden = !state.example;
   const has = !!v.text;
   output.classList.toggle("placeholder", !has);
-  if (!has) output.textContent = v.status === "err" ? (v.error || "Ei version ta toiri kora jayni.") : v.status === "streaming" ? "" : "Lekha paste korun, tarpor “Humanize koro” chapun.";
+  if (!has) output.textContent = v.status === "err" ? (v.error || "This version could not be created.") : v.status === "streaming" ? "" : "Paste your text, then press “Humanize”.";
   else if (state.tab === "diff") output.innerHTML = diffHTML(state.source, v.text);
   else output.innerHTML = markAI(v.text);
   output.classList.toggle("streaming", v.status === "streaming");
@@ -109,14 +109,14 @@ function renderAI(src, out) {
   meter("ai-before-bar", "ai-before-num", before);
   meter("ai-after-bar", "ai-after-num", after);
   const show = after || before;
-  if (!show) { setPill("ai-pill", "idle", "—"); $("ai-signals").textContent = `AI score er jonno kompokkhe ${MIN_WORDS} word lagbe.`; return; }
+  if (!show) { setPill("ai-pill", "idle", "—"); $("ai-signals").textContent = `The AI score needs at least ${MIN_WORDS} words.`; return; }
   if (after && before) {
     const drop = before.score - after.score;
-    setPill("ai-pill", after.tone, drop > 0 ? `${drop} point komeche` : after.label);
+    setPill("ai-pill", after.tone, drop > 0 ? `${drop} points lower` : after.label);
   } else setPill("ai-pill", show.tone, show.label);
   $("ai-signals").textContent = show.signals.length
-    ? `${after ? "Notun lekhay" : "Apnar lekhay"} je karone AI er moto lage: ${show.signals.join(", ")}.`
-    : `${after ? "Notun lekhay" : "Apnar lekhay"} AI er common kono pattern pawa jayni.`;
+    ? `Why ${after ? "the rewrite" : "your text"} looks AI-written: ${show.signals.join(", ")}.`
+    : `No common AI patterns found in ${after ? "the rewrite" : "your text"}.`;
 }
 
 function renderChecks() {
@@ -129,11 +129,11 @@ function renderChecks() {
   $("a-chips").replaceChildren(...[...target.entries()].map(([k, c]) => chip(c > 1 ? `${k} ×${c}` : k)));
   if (outAI) {
     const before = [...inAI.values()].reduce((a, b) => a + b, 0);
-    setPill("a-pill", total === 0 ? "ok" : total <= 2 ? "warn" : "bad", total === 0 ? "Clean" : `${total} baki`);
-    $("a-note").textContent = `Original e chhilo ${before} ta, natural version e ${total} ta.`;
+    setPill("a-pill", total === 0 ? "ok" : total <= 2 ? "warn" : "bad", total === 0 ? "Clean" : `${total} left`);
+    $("a-note").textContent = `${before} in the original, ${total} in the rewrite.`;
   } else {
-    setPill("a-pill", total === 0 ? "ok" : "warn", `${total} ta pawa geche`);
-    $("a-note").textContent = total ? "Egula AI-er lekhay khub beshi dekha jay." : "Kono common AI phrase pawa jayni.";
+    setPill("a-pill", total === 0 ? "ok" : "warn", `${total} found`);
+    $("a-note").textContent = total ? "These show up a lot in AI-written text." : "No common AI phrases found.";
   }
 
   const lin = sentences(src).map(words), lout = out ? sentences(out).map(words) : [];
@@ -144,21 +144,21 @@ function renderChecks() {
   if (out && lout.length > 1) {
     const pct = Math.round(sOut * 100);
     setPill("r-pill", sOut >= 0.35 ? "ok" : sOut >= 0.2 ? "warn" : "bad", `Variation ${pct}%`);
-    $("r-note").textContent = `Sentence length variation: age ${Math.round(sIn * 100)}%, pore ${pct}%. 35% er beshi hole natural lage.`;
+    $("r-note").textContent = `Sentence length variation: ${Math.round(sIn * 100)}% before, ${pct}% after. Above 35% reads as natural.`;
   } else {
     setPill("r-pill", "idle", lin.length > 1 ? `Variation ${Math.round(sIn * 100)}%` : "—");
-    $("r-note").textContent = "Manush chhoto-boro mishie lekhe. AI er sentence gulo prai shob eki length er hoy.";
+    $("r-note").textContent = "People mix short and long sentences. AI sentences tend to be the same length.";
   }
 
   const fChips = $("f-chips"); fChips.replaceChildren();
   const items = [...numbersIn(src).map((n) => ({ t: n })), ...lockedTerms().filter((t) => src.toLowerCase().includes(t.toLowerCase())).map((t) => ({ t }))];
-  if (!items.length) { setPill("f-pill", "idle", "—"); $("f-note").textContent = "Input e kono number ba locked word nei."; }
-  else if (!out) { items.forEach((x) => fChips.append(chip(x.t))); setPill("f-pill", "idle", `${items.length} ta check hobe`); $("f-note").textContent = "Rewrite er por egula thik ache kina dekhabe."; }
+  if (!items.length) { setPill("f-pill", "idle", "—"); $("f-note").textContent = "No numbers or locked words in the text."; }
+  else if (!out) { items.forEach((x) => fChips.append(chip(x.t))); setPill("f-pill", "idle", `${items.length} to check`); $("f-note").textContent = "After the rewrite, each one is checked."; }
   else {
     let miss = 0;
     items.forEach((x) => { const ok = out.toLowerCase().includes(x.t.toLowerCase()); if (!ok) miss++; fChips.append(chip((ok ? "✓ " : "✗ ") + x.t, ok ? "kept" : "missing")); });
-    setPill("f-pill", miss ? "bad" : "ok", miss ? `${miss} ta harieche` : "Shob thik");
-    $("f-note").textContent = miss ? "Lal gula notun lekhay nei. Arekbar try korun ba nije thik kore nin." : "Shob number ar locked word hubohu ache.";
+    setPill("f-pill", miss ? "bad" : "ok", miss ? `${miss} missing` : "All kept");
+    $("f-note").textContent = miss ? "The red ones are missing from the rewrite. Try again or fix them by hand." : "Every number and locked word is kept exactly.";
   }
   renderMeaning(v);
 }
@@ -166,14 +166,14 @@ function renderChecks() {
 function renderMeaning(v) {
   const c = v.check, detail = $("m-detail"); detail.replaceChildren();
   const ring = (n) => { $("m-ring").style.strokeDashoffset = String(169.6 * (1 - (n ?? 0) / 100)); $("m-num").textContent = n == null ? "—" : String(n); };
-  if (c === "pending") { ring(null); setPill("m-pill", "idle", "Check hocche…"); $("m-verdict").textContent = "Claude original ar notun lekha milie dekhche…"; return; }
+  if (c === "pending") { ring(null); setPill("m-pill", "idle", "Checking…"); $("m-verdict").textContent = "Claude is comparing the rewrite with the original…"; return; }
   if (!c) {
     ring(null); setPill("m-pill", "idle", "—");
-    $("m-verdict").textContent = v.text && v.status !== "streaming" ? "Mane check kora jayni." : "Rewrite er por Claude original ar notun lekha milie dekhbe kono idea harie gelo kina.";
+    $("m-verdict").textContent = v.text && v.status !== "streaming" ? "The meaning check could not be completed." : "After the rewrite, Claude compares it with the original to check that no ideas were lost.";
     return;
   }
   ring(c.score);
-  setPill("m-pill", c.score >= 90 ? "ok" : c.score >= 75 ? "warn" : "bad", c.score >= 90 ? "Thik ache" : c.score >= 75 ? "Mostly thik" : "Mane bodleche");
+  setPill("m-pill", c.score >= 90 ? "ok" : c.score >= 75 ? "warn" : "bad", c.score >= 90 ? "Preserved" : c.score >= 75 ? "Mostly kept" : "Meaning changed");
   $("m-verdict").textContent = c.verdict || "";
   const list = (title, arr) => {
     if (!arr || !arr.length) return;
@@ -181,7 +181,7 @@ function renderMeaning(v) {
     const ul = document.createElement("ul"); arr.forEach((x) => { const li = document.createElement("li"); li.textContent = x; ul.append(li); });
     detail.append(h, ul);
   };
-  list("Harie geche", c.missing); list("Notun jog hoyeche", c.added);
+  list("Lost", c.missing); list("Added", c.added);
 }
 
 function renderAll() { renderVersionTabs(); renderOutput(); renderChecks(); }
@@ -189,7 +189,7 @@ function renderAll() { renderVersionTabs(); renderOutput(); renderChecks(); }
 // ---------- Where Claude runs ----------
 // "server": our /api (Vercel or npm start). "browser": the visitor's own key, for static hosts like GitHub Pages.
 let mode = "server", Anthropic = null;
-const KEY_STORE = "manush-lekha-key";
+const KEY_STORE = "humanizer-key";
 const keyStore = {
   get() { try { return localStorage.getItem(KEY_STORE) || ""; } catch { return ""; } },
   set(v) { try { v ? localStorage.setItem(KEY_STORE, v) : localStorage.removeItem(KEY_STORE); } catch {} }
@@ -202,7 +202,7 @@ async function detectMode() {
       const h = await r.json();
       if (h.ok) {
         if (Number.isInteger(h.wordLimit) && h.wordLimit > 0) wordLimit = h.wordLimit;
-        if (!h.configured) setStatus("Server e API key set kora nei, tai rewrite kaj korbe na.", true);
+        if (!h.configured) setStatus("The server has no API key set, so rewrites will not work.", true);
         syncInput();
         return;
       }
@@ -221,7 +221,7 @@ $("forget").addEventListener("click", () => { $("apikey").value = ""; $("remembe
 
 async function browserClient() {
   const apiKey = $("apikey").value.trim();
-  if (!apiKey) { $("apikey").focus(); throw fail("Age upore apnar Claude API key din."); }
+  if (!apiKey) { $("apikey").focus(); throw fail("Enter your Claude API key above first."); }
   if (!Anthropic) Anthropic = (await import("./vendor/anthropic.js")).default;
   return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
 }
@@ -249,16 +249,16 @@ async function browserCheck(original, rewrite, signal) {
   let result;
   try { result = readCheck(await client.beta.messages.create(checkRequest(original, rewrite), { signal })); }
   catch (e) { throw toUserError(e, signal); }
-  if (!result) throw fail("Mane check kora gelo na.");
+  if (!result) throw fail("The meaning check could not be completed.");
   return result;
 }
 
 async function postJson(url, body, signal) {
   let res;
   try { res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal }); }
-  catch (e) { if (e.name === "AbortError") throw e; throw fail("Server er sathe connect kora jacche na. Internet check korun."); }
+  catch (e) { if (e.name === "AbortError") throw e; throw fail("Could not reach the server. Check your internet connection."); }
   if (!res.ok) {
-    let msg = "Kichu ekta gondogol hoyeche. Abar try korun.";
+    let msg = "Something went wrong. Please try again.";
     try { msg = (await res.json()).error || msg; } catch {}
     throw fail(msg);
   }
@@ -295,23 +295,23 @@ const goLabel = goBtn.querySelector("span"), goIcon = goBtn.querySelector("svg")
 function setBusy(b) {
   goBtn.disabled = b; againBtn.disabled = b; stopBtn.hidden = !b;
   goBtn.classList.toggle("loading", b);
-  goLabel.textContent = b ? "Likhche…" : "Humanize koro";
+  goLabel.textContent = b ? "Writing…" : "Humanize";
   if (b) { const sp = document.createElement("i"); sp.className = "spin"; goIcon.replaceWith(sp); }
   else goBtn.querySelector(".spin")?.replaceWith(goIcon);
 }
 
 async function run() {
   const src = input.value.trim();
-  if (!src) { setStatus("Age kichu lekha paste korun.", true); input.focus(); return; }
+  if (!src) { setStatus("Paste some text first.", true); input.focus(); return; }
   const n = words(src);
-  if (n > wordLimit) { setStatus(`Ekbare ${wordLimit} word porjonto deya jay, apni diyechen ${n}. Choto bhag kore din.`, true); return; }
+  if (n > wordLimit) { setStatus(`You can rewrite up to ${wordLimit} words at a time. This text has ${n}. Please split it into smaller parts.`, true); return; }
 
   const count = Number(seg("versions"));
   const settings = { tone: seg("tone"), strength: seg("strength"), lang: $("lang").value, locked: lockedTerms() };
   ctl = new AbortController();
   const signal = ctl.signal;
   setBusy(true);
-  setStatus(count > 1 ? `${count} ta version likhche…` : "Thinking…");
+  setStatus(count > 1 ? `Writing ${count} versions…` : "Thinking…");
   state = { source: src, versions: Array.from({ length: count }, () => ({ text: "", check: null, status: "streaming" })), active: 0, example: false, tab: "result" };
   renderAll();
 
@@ -326,8 +326,8 @@ async function run() {
         if (state.active === i) renderOutput();
       });
       v.text = text.trim(); v.stop = stop;
-      if (stop === "refusal") throw fail("Claude ei lekha ta rewrite korte rajhi hoyni.");
-      if (!v.text) throw fail("Kono uttor ashe ni. Abar try korun.");
+      if (stop === "refusal") throw fail("Claude declined to rewrite this text.");
+      if (!v.text) throw fail("No response came back. Please try again.");
       v.status = "checking"; v.check = "pending"; renderAll();
       try { v.check = await check(src, v.text, signal); }
       catch (e) { v.check = null; if (e.name === "AbortError") throw e; }
@@ -335,7 +335,7 @@ async function run() {
     } catch (e) {
       v.text = (e.partial || v.text || "").trim();
       v.status = e.name === "AbortError" ? (v.text ? "done" : "err") : "err";
-      v.error = e.name === "AbortError" ? "Bondho kora hoyeche." : e.userMessage || "Kichu ekta gondogol hoyeche.";
+      v.error = e.name === "AbortError" ? "Stopped." : e.userMessage || "Something went wrong.";
       if (v.check === "pending") v.check = null;
     } finally { renderAll(); }
   };
@@ -346,11 +346,11 @@ async function run() {
   const good = state.versions.filter((v) => v.status === "done" && v.text);
   const bad = state.versions.filter((v) => v.status === "err");
   if (cur().status === "err" && good.length) state.active = state.versions.indexOf(good[0]);
-  if (!good.length) setStatus(signal.aborted ? "Bondho kora hoyeche." : bad[0]?.error || "Kichu ekta gondogol hoyeche.", !signal.aborted);
+  if (!good.length) setStatus(signal.aborted ? "Stopped." : bad[0]?.error || "Something went wrong.", !signal.aborted);
   else {
-    const notes = [signal.aborted ? "Bondho kora hoyeche." : "Hoye geche."];
-    if (bad.length) notes.push(`${bad.length} ta version toiri kora jayni.`);
-    if (good.some((v) => v.stop === "max_tokens")) notes.push("Lekha majh pothe kete geche, choto bhag kore din.");
+    const notes = [signal.aborted ? "Stopped." : "Done."];
+    if (bad.length) notes.push(`${bad.length} version${bad.length === 1 ? "" : "s"} could not be created.`);
+    if (good.some((v) => v.stop === "max_tokens")) notes.push("The text was cut off; try a shorter part.");
     setStatus(notes.join(" "));
     againBtn.hidden = false;
     const before = aiScore(src);
@@ -374,15 +374,15 @@ $("copy").addEventListener("click", async () => {
   catch {
     state.tab = "result"; renderOutput();
     const r = document.createRange(); r.selectNodeContents(output); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
-    label.textContent = "Select hoyeche, Ctrl+C chapun";
+    label.textContent = "Selected, press Ctrl+C";
   }
   setTimeout(() => { label.textContent = "Copy"; }, 2000);
 });
-$("use-version").textContent = "Input e nao";
-$("use-version").title = "Ei lekha ta input e niye abar edit ba humanize korun";
+$("use-version").textContent = "Edit this";
+$("use-version").title = "Move this rewrite into the input to edit or humanize it again";
 $("use-version").addEventListener("click", () => {
   input.value = cur().text; syncInput(); input.focus();
-  setStatus("Ei version ta input e neya hoyeche. Chaile abar humanize korte paren.");
+  setStatus("This version is now in the input. You can edit it or humanize it again.");
 });
 
 // ---------- File upload ----------
@@ -392,13 +392,13 @@ $("upload").addEventListener("click", () => fileInput.click());
 fileInput.addEventListener("change", () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); fileInput.value = ""; });
 
 async function loadFile(file) {
-  setStatus(`${file.name} pora hocche…`);
+  setStatus(`Reading ${file.name}…`);
   try {
     const text = await readTextFile(file);
     input.value = text; input.scrollTop = 0; syncInput(); renderChecks();
     const n = words(text);
-    setStatus(n > wordLimit ? `${file.name} theke ${n} word neya hoyeche. Ekbare ${wordLimit} word porjonto deya jay, tai kichu ongsho muchhe din.` : `${file.name} theke ${n} word neya hoyeche.`, n > wordLimit);
-  } catch (e) { setStatus(e.message || "File ta pora gelo na.", true); }
+    setStatus(n > wordLimit ? `Loaded ${n} words from ${file.name}. The limit is ${wordLimit} words at a time, so please remove some.` : `Loaded ${n} words from ${file.name}.`, n > wordLimit);
+  } catch (e) { setStatus(e.message || "The file could not be read.", true); }
 }
 
 const editor = $("editor"), drop = $("drop");
@@ -418,7 +418,7 @@ window.addEventListener("drop", (e) => { if (hasFiles(e)) e.preventDefault(); })
 
 // ---------- History ----------
 const dialog = $("history");
-const when = (t) => new Date(t).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+const when = (t) => new Date(t).toLocaleString("en-US", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 const snippet = (s, n = 140) => (s.length > n ? s.slice(0, n).trimEnd() + "…" : s);
 
 function renderHistory(list = loadHistory()) {
@@ -430,16 +430,16 @@ function renderHistory(list = loadHistory()) {
     const li = document.createElement("li"); li.className = "h-item";
     const meta = document.createElement("div"); meta.className = "h-meta";
     const a = document.createElement("span");
-    a.textContent = `${when(h.at)} · ${MODE_NAMES[h.settings?.strength] || ""} · ${TONE_NAMES[h.settings?.tone] || ""}${h.versions.length > 1 ? ` · ${h.versions.length} version` : ""}`;
+    a.textContent = `${when(h.at)} · ${MODE_NAMES[h.settings?.strength] || ""} · ${TONE_NAMES[h.settings?.tone] || ""}${h.versions.length > 1 ? ` · ${h.versions.length} versions` : ""}`;
     const after = aiScore(h.versions[0]?.text || "");
     const b = document.createElement("span");
     b.textContent = h.aiBefore != null && after ? `AI ${h.aiBefore} → ${after.score}` : "";
     meta.append(a, b);
     const p = document.createElement("p"); p.className = "h-text"; p.textContent = snippet(h.versions[0]?.text || h.source);
     const actions = document.createElement("div"); actions.className = "h-actions";
-    const del = document.createElement("button"); del.type = "button"; del.className = "btn small ghost"; del.textContent = "Muchhe felo";
+    const del = document.createElement("button"); del.type = "button"; del.className = "btn small ghost"; del.textContent = "Delete";
     del.addEventListener("click", () => renderHistory(removeHistory(h.id)));
-    const open = document.createElement("button"); open.type = "button"; open.className = "btn small"; open.textContent = "Kholo";
+    const open = document.createElement("button"); open.type = "button"; open.className = "btn small"; open.textContent = "Open";
     open.addEventListener("click", () => restore(h));
     actions.append(del, open);
     li.append(meta, p, actions);
@@ -457,7 +457,7 @@ function restore(h) {
   setSeg("versions", String(Math.min(3, Math.max(1, h.versions.length))));
   state = { source: h.source, versions: h.versions.map((v) => ({ ...v, status: "done" })), active: 0, example: false, tab: "result" };
   renderAll();
-  setStatus(`${when(h.at)} er rewrite khola hoyeche.`);
+  setStatus(`Opened the rewrite from ${when(h.at)}.`);
   dialog.close();
   $("tool").scrollIntoView({ block: "start" });
 }
@@ -469,17 +469,17 @@ let confirmTimer = null;
 $("history-clear").addEventListener("click", (e) => {
   const btn = e.currentTarget;
   if (btn.dataset.confirm !== "1") {
-    btn.dataset.confirm = "1"; btn.textContent = "Nishchit? Abar chapun";
+    btn.dataset.confirm = "1"; btn.textContent = "Sure? Click again";
     clearTimeout(confirmTimer);
-    confirmTimer = setTimeout(() => { btn.dataset.confirm = ""; btn.textContent = "Shob muchhe felo"; }, 3000);
+    confirmTimer = setTimeout(() => { btn.dataset.confirm = ""; btn.textContent = "Clear all"; }, 3000);
     return;
   }
-  btn.dataset.confirm = ""; btn.textContent = "Shob muchhe felo";
+  btn.dataset.confirm = ""; btn.textContent = "Clear all";
   renderHistory(clearHistory());
 });
 
 // ---------- Theme ----------
-const THEME_KEY = "manush-lekha-theme";
+const THEME_KEY = "humanizer-theme";
 function applyTheme(t) {
   if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
   document.querySelectorAll("[data-theme-choice]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.themeChoice === (t || "system"))));

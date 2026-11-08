@@ -1,7 +1,7 @@
 {
-  "name": "manush-lekha",
+  "name": "humanizer",
   "version": "1.0.0",
-  "description": "AI-er lekha natural kore rewrite korar website, mane ar number thik rekhe",
+  "description": "Rewrite AI text so it reads naturally, while keeping its meaning, numbers and names",
   "type": "module",
   "private": true,
   "scripts": {

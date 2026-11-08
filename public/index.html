@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Manush Lekha</title>
-<meta name="description" content="AI lekha humanizer: AI score, 3 ta mode, 3 ta version, Word file upload. Mane, number ar naam thik rekhe. বাংলা, English ও Banglish.">
+<title>Humanizer</title>
+<meta name="description" content="Rewrite AI text so it reads like a person wrote it, with an AI score, three modes, up to three versions and Word file upload. Meaning, numbers and names stay the same.">
 <meta name="theme-color" content="#0B1017" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#F6F8FA" media="(prefers-color-scheme: light)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2310B981'/%3E%3Cstop offset='1' stop-color='%230EA5E9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='url(%23g)'/%3E%3Cpath d='M9 22V10l7 7 7-7v12' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hind+Siliguri:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
 <script>
   // Apply the saved theme before paint so the page never flashes the wrong one.
-  try { const t = localStorage.getItem("manush-lekha-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}
+  try { const t = localStorage.getItem("humanizer-theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}
 </script>
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -22,14 +22,12 @@
 
 <nav class="nav gutter" aria-label="Main">
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="Manush Lekha">
+    <a class="brand" href="#top" aria-label="Humanizer">
       <span class="logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 32 32"><path d="M8 23V9l8 8 8-8v14" fill="none" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      Manush Lekha
+      Humanizer
     </a>
     <div class="nav-links">
-      <a href="#features" class="hide-sm">Features</a>
       <a href="#pricing" class="hide-sm">Pricing</a>
-      <a href="#faq" class="hide-sm">FAQ</a>
       <button type="button" class="nav-btn" id="open-history" aria-label="History">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
         <span class="hide-xs">History</span><span class="count" id="history-count" hidden></span>
@@ -47,14 +45,14 @@
 <main id="top" class="gutter">
   <div class="wrap">
     <header class="hero">
-      <span class="eyebrow"><b>নতুন</b> বাংলা · English · Banglish</span>
-      <h1>AI lekha, <span class="grad-text">manusher bhashay.</span></h1>
-      <p class="sub">Robot er moto shona lekhake natural kore. Tobe apnar lekhar mane, number ar naam kichui bodlay na, ar protita rewrite check kore dekhay.</p>
+      <span class="eyebrow"><b>New</b> English · Bangla · Banglish</span>
+      <h1>AI text, <span class="grad-text">in a human voice.</span></h1>
+      <p class="sub">Turns robotic writing into natural writing. Your meaning, numbers and names stay exactly the same, and every rewrite is checked.</p>
       <ul class="trust">
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Age ar pore AI score</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Ek click e 3 ta version</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>AI score before and after</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Up to 3 versions in one click</li>
         <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Word file upload</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Mane thik ache kina check</li>
+        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Meaning check</li>
       </ul>
     </header>
 
@@ -62,16 +60,16 @@
       <div class="modes" role="group" aria-labelledby="mode-l" id="strength">
         <span class="label modes-label" id="mode-l">Mode</span>
         <button type="button" class="mode" data-v="light" aria-pressed="false">
-          <span class="mode-name"><i class="lvl" data-l="1" aria-hidden="true"></i>Halka</span>
-          <span class="mode-desc">Shudhu robot er moto jayga gulo thik kore</span>
+          <span class="mode-name"><i class="lvl" data-l="1" aria-hidden="true"></i>Light</span>
+          <span class="mode-desc">Fixes only the robotic parts</span>
         </button>
         <button type="button" class="mode" data-v="medium" aria-pressed="true">
-          <span class="mode-name"><i class="lvl" data-l="2" aria-hidden="true"></i>Shadharon</span>
-          <span class="mode-desc">Sentence notun kore, structure same thake</span>
+          <span class="mode-name"><i class="lvl" data-l="2" aria-hidden="true"></i>Balanced</span>
+          <span class="mode-desc">Rewrites sentences, keeps the structure</span>
         </button>
         <button type="button" class="mode" data-v="strong" aria-pressed="false">
-          <span class="mode-name"><i class="lvl" data-l="3" aria-hidden="true"></i>Gobhir</span>
-          <span class="mode-desc">Puro lekha notun kore sajay, mane same</span>
+          <span class="mode-name"><i class="lvl" data-l="3" aria-hidden="true"></i>Deep</span>
+          <span class="mode-desc">Restructures everything, same meaning</span>
         </button>
       </div>
 
@@ -97,29 +95,29 @@
         <div class="field">
           <label class="label" for="lang">Output language</label>
           <select id="lang">
-            <option value="same">Input er moto</option>
+            <option value="same">Same as input</option>
             <option value="en">English</option>
-            <option value="bn">বাংলা</option>
+            <option value="bn">Bangla</option>
             <option value="banglish">Banglish</option>
           </select>
         </div>
         <div class="field grow">
-          <label class="label" for="locked">Lock kora word, egula bodlabe na</label>
-          <input type="text" id="locked" value="Facebook, TikTok, Bangladesh" placeholder="Comma diye likhun, jemon brand name, technical term">
+          <label class="label" for="locked">Locked words (never changed)</label>
+          <input type="text" id="locked" value="Facebook, TikTok, Bangladesh" placeholder="Comma-separated, e.g. brand names, technical terms">
         </div>
       </div>
 
       <section class="keybar" id="keybar" hidden aria-label="Claude API key">
         <div class="keytext">
-          <h2><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M17 6l3 3M14.5 8.5l2 2"/></svg>Apnar Claude API key din</h2>
-          <p>Ei page e kono server nei, tai rewrite korte apnar nijer Anthropic API key lagbe. Key ta apnar browser theke sorasori Anthropic e jay, onno kothao jay na. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Key kothay pabo?</a></p>
+          <h2><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M17 6l3 3M14.5 8.5l2 2"/></svg>Enter your Claude API key</h2>
+          <p>This page has no server, so rewrites need your own Anthropic API key. The key goes straight from your browser to Anthropic and nowhere else. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Where do I get one?</a></p>
         </div>
         <div class="keyform">
           <label class="label" for="apikey">API key</label>
           <input type="password" id="apikey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
           <div class="keyopts">
-            <label class="check-label"><input type="checkbox" id="remember"> Ei browser e mone rakho</label>
-            <button type="button" class="btn small ghost" id="forget">Muchhe felo</button>
+            <label class="check-label"><input type="checkbox" id="remember"> Remember in this browser</label>
+            <button type="button" class="btn small ghost" id="forget">Forget</button>
           </div>
         </div>
       </section>
@@ -127,7 +125,7 @@
       <div class="desk">
         <div class="pane">
           <div class="pane-head">
-            <h2><span class="dot" aria-hidden="true"></span>Apnar lekha</h2>
+            <h2><span class="dot" aria-hidden="true"></span>Your text</h2>
             <div class="head-tools">
               <span class="ai-badge" id="in-ai" title="AI score estimate">AI —</span>
               <button type="button" class="btn small" id="upload"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>Upload</button>
@@ -136,27 +134,27 @@
           </div>
           <div class="editor" id="editor">
             <div class="backdrop" aria-hidden="true"><div id="backdrop-inner"></div></div>
-            <textarea id="input" aria-label="Original text" spellcheck="false" placeholder="Ekhane lekha paste korun, ba .txt / .docx file tene niye ashun"></textarea>
-            <div class="drop" id="drop" hidden><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>File ta chhere din</span></div>
+            <textarea id="input" aria-label="Original text" spellcheck="false" placeholder="Paste your text here, or drop a .txt or .docx file"></textarea>
+            <div class="drop" id="drop" hidden><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Drop the file</span></div>
           </div>
           <div class="pane-foot">
             <div class="wc">
               <span class="mono" id="wc-text">0 / 500 words</span>
               <span class="wc-bar" aria-hidden="true"><i id="wc-bar"></i></span>
             </div>
-            <span class="legend hide-xs"><mark>holud</mark> = AI phrase</span>
+            <span class="legend hide-xs"><mark>yellow</mark> = AI phrase</span>
             <button type="button" class="btn small ghost" id="clear">Clear</button>
           </div>
         </div>
 
         <div class="pane">
           <div class="pane-head">
-            <h2><span class="dot live" aria-hidden="true"></span>Natural version <span class="example-badge" id="example-badge">Example</span></h2>
+            <h2><span class="dot live" aria-hidden="true"></span>Humanized <span class="example-badge" id="example-badge">Example</span></h2>
             <div class="head-tools">
               <span class="ai-badge" id="out-ai" title="AI score estimate">AI —</span>
               <div class="tabs" role="tablist" aria-label="View">
                 <button type="button" role="tab" id="tab-result" aria-selected="true">Result</button>
-                <button type="button" role="tab" id="tab-diff" aria-selected="false">Ki bodlalo</button>
+                <button type="button" role="tab" id="tab-diff" aria-selected="false">Changes</button>
               </div>
             </div>
           </div>
@@ -165,7 +163,7 @@
           <div class="pane-foot">
             <span class="mono" id="out-count"></span>
             <div class="foot-actions">
-              <button type="button" class="btn small" id="use-version" hidden>Ei version ta nao</button>
+              <button type="button" class="btn small" id="use-version" hidden>Edit this</button>
               <button type="button" class="btn small" id="copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>Copy</span></button>
             </div>
           </div>
@@ -173,8 +171,8 @@
       </div>
 
       <div class="actionbar">
-        <button type="button" class="btn primary" id="go"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"/></svg><span>Humanize koro</span></button>
-        <button type="button" class="btn" id="again" hidden>Arekbar try koro</button>
+        <button type="button" class="btn primary" id="go"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"/></svg><span>Humanize</span></button>
+        <button type="button" class="btn" id="again" hidden>Try again</button>
         <button type="button" class="btn ghost" id="stop" hidden>Stop</button>
         <span class="status" id="status" role="status"></span>
         <span class="hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
@@ -184,7 +182,7 @@
     <section class="section" id="report" aria-labelledby="report-h">
       <div class="section-head">
         <h2 id="report-h">Quality report</h2>
-        <p>Protita rewrite er por egula nije nije check hoy. Ekadhik version thakle, je version ta dekhchen tar report dekhay.</p>
+        <p>Every rewrite is checked automatically. With several versions, the report follows the version you are viewing.</p>
       </div>
 
       <div class="ai-card" aria-labelledby="ai-h">
@@ -194,32 +192,32 @@
         </div>
         <div class="meters">
           <div class="meter-row">
-            <span class="label">Age</span>
+            <span class="label">Before</span>
             <div class="meter" aria-hidden="true"><i id="ai-before-bar"></i></div>
             <span class="meter-num" id="ai-before-num">—</span>
           </div>
           <div class="meter-row">
-            <span class="label">Pore</span>
+            <span class="label">After</span>
             <div class="meter out" aria-hidden="true"><i id="ai-after-bar"></i></div>
             <span class="meter-num" id="ai-after-num">—</span>
           </div>
-          <div class="meter-scale" aria-hidden="true"><span>0 · Manusher moto</span><span>Mishro</span><span>AI er moto · 100</span></div>
+          <div class="meter-scale" aria-hidden="true"><span>0 · Human-like</span><span>Mixed</span><span>AI-like · 100</span></div>
         </div>
         <p class="ai-signals" id="ai-signals"></p>
-        <p class="fine">Eta lekhar pattern dekhe kora ekta estimate (stock phrase, sentence length, shuru'r shobdo). Kono asol AI detector er result na, ar kono detector-i 100% thik bole na.</p>
+        <p class="fine">This is an estimate based on writing patterns (stock phrases, sentence length, sentence openers). It is not the result of a real AI detector, and no detector is 100% accurate.</p>
       </div>
 
       <div class="checks">
         <div class="check">
-          <div class="check-head"><h3><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span>Mane thik ache?</h3><span class="pill idle" id="m-pill">—</span></div>
+          <div class="check-head"><h3><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span>Meaning kept?</h3><span class="pill idle" id="m-pill">—</span></div>
           <div class="score">
             <div class="ring" aria-hidden="true"><svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="27"/><circle class="val" id="m-ring" cx="32" cy="32" r="27" stroke-dasharray="169.6" stroke-dashoffset="169.6"/></svg><span id="m-num">—</span></div>
-            <p id="m-verdict">Rewrite er por Claude original ar notun lekha milie dekhbe kono idea harie gelo kina.</p>
+            <p id="m-verdict">After the rewrite, Claude compares it with the original to check that no ideas were lost.</p>
           </div>
           <div id="m-detail"></div>
         </div>
         <div class="check">
-          <div class="check-head"><h3><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>Number o locked word</h3><span class="pill idle" id="f-pill">—</span></div>
+          <div class="check-head"><h3><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>Numbers and locked words</h3><span class="pill idle" id="f-pill">—</span></div>
           <div class="chips" id="f-chips"></div>
           <p id="f-note"></p>
         </div>
@@ -231,144 +229,77 @@
         <div class="check">
           <div class="check-head"><h3><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M9 20V4M14 20v-7M19 20V8"/></svg></span>Sentence rhythm</h3><span class="pill idle" id="r-pill">—</span></div>
           <div class="rhythm">
-            <div class="rhythm-row"><span class="label">Age</span><div class="bars" id="r-in"></div></div>
-            <div class="rhythm-row"><span class="label">Pore</span><div class="bars out" id="r-out"></div></div>
+            <div class="rhythm-row"><span class="label">Before</span><div class="bars" id="r-in"></div></div>
+            <div class="rhythm-row"><span class="label">After</span><div class="bars out" id="r-out"></div></div>
           </div>
-          <p id="r-note">Manush chhoto-boro mishie lekhe. AI er sentence gulo prai shob eki length er hoy.</p>
+          <p id="r-note">People mix short and long sentences. AI sentences tend to be the same length.</p>
         </div>
-      </div>
-    </section>
-
-    <section class="section" id="features" aria-labelledby="feat-h">
-      <div class="section-head">
-        <h2 id="feat-h">Ja ja korte paren</h2>
-        <p>Shudhu shobdo bodlano na. Lekha ta jate apnar-i thake, sheta nishchit kore.</p>
-      </div>
-      <div class="features">
-        <div class="feature"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></span><h3>AI detection score</h3><p>Rewrite er age ar pore lekha koto ta "AI er moto" lage, meter e dekhay, ar keno lage sheta-o bole.</p></div>
-        <div class="feature"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></span><h3>Tin ta mode</h3><p>Halka, Shadharon ar Gobhir. Shudhu ektu polish lagbe naki puro notun kore sajate hobe, apni thik koren.</p></div>
-        <div class="feature"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><h3>Ek click e 3 version</h3><p>Ekbare 3 ta alada rewrite, protita'r nijer score soho. Je ta bhalo lage, sheta nin.</p></div>
-        <div class="feature"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 18v-6M9 15l3-3 3 3"/></svg></span><h3>File upload</h3><p>.txt, .md ba Word (.docx) file din, ba editor e tene niye ashun. File apnar browser ei pora hoy.</p></div>
-        <div class="feature"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><h3>History</h3><p>Ager 30 ta rewrite apnar browser e save thake. Je kono shomoy abar khule copy korte paren.</p></div>
-        <div class="feature"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span><h3>Mane o fact lock</h3><p>Number, naam ar brand hubohu thake. Claude milie dekhe kono idea harie gelo kina.</p></div>
-      </div>
-    </section>
-
-    <section class="section" id="how" aria-labelledby="how-h">
-      <div class="section-head"><h2 id="how-h">Kivabe kaj kore</h2></div>
-      <div class="steps">
-        <div class="step"><h3>Lekha din</h3><p>Paste korun ba file upload korun. Je naam ba word bodlano jabe na, sheta lock kore din.</p></div>
-        <div class="step"><h3>Mode ar tone bachun</h3><p>Halka, Shadharon ba Gobhir. Tone ar koy ta version lagbe sheta-o bole din.</p></div>
-        <div class="step"><h3>Report dekhe nin</h3><p>AI score, mane er score, harano number ar sentence rhythm dekhe shobcheye bhalo version ta nin.</p></div>
-      </div>
-    </section>
-
-    <!-- Replace these sample reviews with real feedback from your users before you launch. -->
-    <section class="section" id="reviews" aria-labelledby="rev-h">
-      <div class="section-head">
-        <h2 id="rev-h">User ra ki bolche</h2>
-        <p><span class="sample-tag">Sample</span> Launch er age egula asol user der review diye bodle din.</p>
-      </div>
-      <div class="reviews">
-        <figure class="review"><blockquote>"Assignment er lekha ta ChatGPT er moto shonacchilo. Gobhir mode e dewar por nijer lekhar moto lage, ar shob data thik chhilo."</blockquote><figcaption><span class="avatar" aria-hidden="true">R</span><span><b>Rafi</b><br>University student</span></figcaption></figure>
-        <figure class="review"><blockquote>"Client er jonno blog likhi. 3 version paoyay je ta brand er sathe mile, sheta bechhe nite pari. Brand name kokhono bodlay na."</blockquote><figcaption><span class="avatar" aria-hidden="true">N</span><span><b>Nusrat</b><br>Content writer</span></figcaption></figure>
-        <figure class="review"><blockquote>"Office email Banglish e likhe English e formal kore nei. Mane check ta dekhe nishchinto thaki."</blockquote><figcaption><span class="avatar" aria-hidden="true">T</span><span><b>Tanvir</b><br>Marketing executive</span></figcaption></figure>
       </div>
     </section>
 
     <section class="section" id="pricing" aria-labelledby="price-h">
       <div class="section-head">
         <h2 id="price-h">Pricing</h2>
-        <p>Free te shuru korun. Paid plan shiggiri ashche.</p>
+        <p>Start free. Paid plans are coming soon.</p>
       </div>
       <div class="plans">
         <div class="plan">
           <h3>Free</h3>
-          <p class="price"><b>৳0</b><span>/ mash</span></p>
+          <p class="price"><b>৳0</b><span>/ month</span></p>
           <ul>
-            <li>Ekbare 500 word porjonto</li>
-            <li>3 ta mode, 5 ta tone</li>
-            <li>3 ta version porjonto</li>
-            <li>AI score ar mane check</li>
-            <li>Browser e 30 ta history</li>
+            <li>Up to 500 words per rewrite</li>
+            <li>3 modes, 5 tones</li>
+            <li>Up to 3 versions</li>
+            <li>AI score and meaning check</li>
+            <li>History of 30 rewrites in your browser</li>
           </ul>
-          <a class="btn plan-btn" href="#tool">Shuru korun</a>
+          <a class="btn plan-btn" href="#tool">Get started</a>
         </div>
         <div class="plan featured">
-          <span class="plan-tag">Shobcheye jonopriyo</span>
+          <span class="plan-tag">Most popular</span>
           <h3>Pro</h3>
-          <p class="price"><b>৳299</b><span>/ mash</span></p>
+          <p class="price"><b>৳299</b><span>/ month</span></p>
           <ul>
-            <li>Ekbare 3,000 word porjonto</li>
-            <li>Free er shob kichu</li>
-            <li>Druto uttor</li>
-            <li>Shob device e history</li>
+            <li>Up to 3,000 words per rewrite</li>
+            <li>Everything in Free</li>
+            <li>Faster responses</li>
+            <li>History on all your devices</li>
             <li>Email support</li>
           </ul>
-          <button type="button" class="btn primary plan-btn" disabled>Shiggiri ashche</button>
+          <button type="button" class="btn primary plan-btn" disabled>Coming soon</button>
         </div>
         <div class="plan">
           <h3>Team</h3>
-          <p class="price"><b>৳999</b><span>/ mash</span></p>
+          <p class="price"><b>৳999</b><span>/ month</span></p>
           <ul>
-            <li>5 jon porjonto</li>
-            <li>Pro er shob kichu</li>
-            <li>Team er shared word list</li>
+            <li>Up to 5 people</li>
+            <li>Everything in Pro</li>
+            <li>Shared locked-word lists</li>
             <li>Usage report</li>
           </ul>
-          <button type="button" class="btn plan-btn" disabled>Shiggiri ashche</button>
+          <button type="button" class="btn plan-btn" disabled>Coming soon</button>
         </div>
       </div>
     </section>
 
-    <section class="section" id="faq" aria-labelledby="faq-h">
-      <div class="section-head"><h2 id="faq-h">Proshno o uttor</h2></div>
-      <div class="faq">
-        <details><summary>Eta ki AI detector ke 100% bypass kore?</summary><p>Na, kono tool-i eta guarantee dite pare na, ar AI detector gulo nijeo prai-i bhul kore. Manush Lekha er kaj lekhake natural ar porte bhalo kora. Lekha koto ta AI er moto lage, sheta bujhte AI score ta ekta estimate hishebe dekhay.</p></details>
-        <details><summary>Amar lekha kothay jay? Save kora hoy?</summary><p>Rewrite korar jonno lekha ta Claude (Anthropic) er kache pathano hoy. History shudhu apnar nijer browser e save thake, amader kono server e na. "History" theke je kono shomoy muchhe felte paren.</p></details>
-        <details><summary>Kon kon bhasha chole?</summary><p>বাংলা, English ar Banglish. Input ek bhashay diye output arek bhashay-o nite paren, jemon Banglish e likhe English e.</p></details>
-        <details><summary>Mode gulor parthokko ki?</summary><p>Halka shudhu robot er moto jayga gulo thik kore. Shadharon sentence notun kore likhe, kintu paragraph er gothon same rakhe. Gobhir puro lekha notun kore sajay, tobe kono idea bad dey na.</p></details>
-        <details><summary>Word file kivabe dibo?</summary><p>"Upload" e click korun, ba .docx, .txt ba .md file editor er upor tene niye ashun. Purono .doc file hole Word e khule .docx hishebe save kore nin.</p></details>
-        <details><summary>School ba office e use kora ki thik?</summary><p>Apnar protishthan er niyom dekhe nin. Onek jaygay AI use korle sheta janate hoy. Manush Lekha apnar lekhake shundor korte shahajjo kore, kintu niyom mene chola apnar daitto.</p></details>
-      </div>
-    </section>
-
-    <section class="cta">
-      <h2>Apnar porer lekha ta manusher moto hok.</h2>
-      <a class="btn primary" href="#tool">Ekhon try korun</a>
-    </section>
   </div>
 </main>
 
 <dialog id="history" class="drawer" aria-labelledby="history-h">
   <div class="drawer-head">
     <h2 id="history-h">History</h2>
-    <button type="button" class="btn small ghost" id="history-close" aria-label="Bondho koro">
+    <button type="button" class="btn small ghost" id="history-close" aria-label="Close">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>
   </div>
-  <p class="drawer-note">Shudhu ei browser e save thake.</p>
+  <p class="drawer-note">Saved only in this browser.</p>
   <ul class="history-list" id="history-list"></ul>
   <div class="history-empty" id="history-empty">
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
-    <p>Ekhono kono rewrite nei. "Humanize koro" chapar por egula ekhane jomabe.</p>
+    <p>No rewrites yet. They will show up here after you press "Humanize".</p>
   </div>
-  <div class="drawer-foot"><button type="button" class="btn small" id="history-clear">Shob muchhe felo</button></div>
+  <div class="drawer-foot"><button type="button" class="btn small" id="history-clear">Clear all</button></div>
 </dialog>
-
-<footer class="gutter">
-  <div class="wrap">
-    <div class="foot-brand">
-      <a class="brand" href="#top"><span class="logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 32 32"><path d="M8 23V9l8 8 8-8v14" fill="none" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Manush Lekha</a>
-      <p>AI lekhake manusher bhashay ane, mane thik rekhe.</p>
-    </div>
-    <nav class="foot-links" aria-label="Footer">
-      <a href="#tool">Tool</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>
-      <a href="https://github.com/Fuad2e3/Humanizer" target="_blank" rel="noopener">GitHub</a>
-    </nav>
-    <p class="foot-note">Kono tool-i AI detector pass korar guarantee dite pare na. School ba office e AI use er niyom thakle sheta mene cholun. · Claude diye cholche</p>
-  </div>
-</footer>
 
 <script type="module" src="app.js"></script>
 </body>

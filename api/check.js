@@ -4,16 +4,16 @@ import { checkMeaning, describeError, allow, clientIp, InputError, MAX_INPUT_CHA
 export default async function handler(req, res) {
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   if (req.method !== "POST") { res.statusCode = 405; res.setHeader("Allow", "POST"); return res.end("{}"); }
-  if (!allow(clientIp(req))) { res.statusCode = 429; return res.end(JSON.stringify({ error: "Ek minute e onek beshi request." })); }
+  if (!allow(clientIp(req))) { res.statusCode = 429; return res.end(JSON.stringify({ error: "Too many requests in the last minute. Please wait a moment." })); }
   if (!isConfigured()) { res.statusCode = 503; return res.end(JSON.stringify({ error: NOT_CONFIGURED })); }
   try {
     const { original, rewrite } = req.body || {};
     for (const v of [original, rewrite]) {
-      if (typeof v !== "string" || !v.trim()) throw new InputError("Original ar rewrite duita-i lagbe.");
-      if (v.length > MAX_INPUT_CHARS * 2) throw new InputError("Lekha ta onek boro.");
+      if (typeof v !== "string" || !v.trim()) throw new InputError("Both the original and the rewrite are required.");
+      if (v.length > MAX_INPUT_CHARS * 2) throw new InputError("The text is too long.");
     }
     const result = await checkMeaning(original.trim(), rewrite.trim());
-    if (!result) { res.statusCode = 422; return res.end(JSON.stringify({ error: "Mane check kora gelo na." })); }
+    if (!result) { res.statusCode = 422; return res.end(JSON.stringify({ error: "The meaning check could not be completed." })); }
     res.end(JSON.stringify(result));
   } catch (err) {
     console.error("check failed:", err);

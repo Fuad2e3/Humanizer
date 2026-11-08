@@ -50,10 +50,10 @@ export class InputError extends Error {}
 // Checks a rewrite request and returns clean options.
 export function parseOptions(body, { maxWords = FREE_WORD_LIMIT } = {}) {
   const text = typeof body?.text === "string" ? body.text.trim() : "";
-  if (!text) throw new InputError("Kono lekha pawa jayni.");
-  if (text.length > MAX_INPUT_CHARS) throw new InputError(`Lekha ta ${MAX_INPUT_CHARS} character er beshi. Choto bhag kore din.`);
+  if (!text) throw new InputError("Please enter some text.");
+  if (text.length > MAX_INPUT_CHARS) throw new InputError(`The text is longer than ${MAX_INPUT_CHARS} characters. Please split it into smaller parts.`);
   const n = countWords(text);
-  if (n > maxWords) throw new InputError(`Ekbare ${maxWords} word porjonto deya jay, apni diyechen ${n}. Choto bhag kore din.`);
+  if (n > maxWords) throw new InputError(`You can rewrite up to ${maxWords} words at a time. This text has ${n}. Please split it into smaller parts.`);
   const pick = (v, table, def) => (Object.hasOwn(table, v) ? v : def);
   const locked = Array.isArray(body.locked)
     ? body.locked.filter((s) => typeof s === "string").map((s) => s.trim()).filter(Boolean).slice(0, 30).map((s) => s.slice(0, 80))
@@ -111,7 +111,7 @@ export function checkRequest(original, rewrite, model = MODEL_DEFAULT) {
     output_config: { effort: "medium", format: { type: "json_schema", schema: CHECK_SCHEMA } },
     system: `You compare an ORIGINAL text with its REWRITE and judge only whether the meaning is preserved. Ignore changes of style, tone or language.
 - score: integer 0-100, how fully the rewrite keeps the original's meaning.
-- verdict: one short sentence in simple Banglish (Bangla written in English letters).
+- verdict: one short sentence in simple English.
 - missing: up to 4 short items, ideas or facts in ORIGINAL that the REWRITE lost.
 - added: up to 4 short items, claims in REWRITE that ORIGINAL does not support.
 Use empty lists when there are none.`,
@@ -137,11 +137,11 @@ export function readCheck(response) {
 // Maps an SDK error to [status, message]. Takes the Anthropic class so both builds can use it.
 export function describeError(err, Anthropic) {
   if (err instanceof InputError) return [400, err.message];
-  if (err instanceof Anthropic.AuthenticationError) return [401, "API key ta thik nei. Key ta check korun."];
-  if (err instanceof Anthropic.PermissionDeniedError) return [403, "Ei API key diye ei model use kora jay na."];
-  if (err instanceof Anthropic.RateLimitError) return [429, "Ekhon onek request asche. Ektu por abar try korun."];
-  if (err instanceof Anthropic.BadRequestError) return [400, "Request ta thik chhilo na. Lekha ta choto kore abar try korun."];
-  if (err instanceof Anthropic.APIError) return [502, "Claude ekhon uttor dite parche na. Ektu por abar try korun."];
-  if (err instanceof Anthropic.APIConnectionError) return [502, "Claude er sathe connect kora jacche na."];
-  return [500, "Kichu ekta gondogol hoyeche. Abar try korun."];
+  if (err instanceof Anthropic.AuthenticationError) return [401, "That API key is not valid. Please check it."];
+  if (err instanceof Anthropic.PermissionDeniedError) return [403, "This API key cannot use this model."];
+  if (err instanceof Anthropic.RateLimitError) return [429, "Too many requests right now. Please try again in a moment."];
+  if (err instanceof Anthropic.BadRequestError) return [400, "The request was not accepted. Try a shorter text."];
+  if (err instanceof Anthropic.APIError) return [502, "Claude is not responding right now. Please try again in a moment."];
+  if (err instanceof Anthropic.APIConnectionError) return [502, "Could not connect to Claude."];
+  return [500, "Something went wrong. Please try again."];
 }

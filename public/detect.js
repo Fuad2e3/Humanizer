@@ -33,12 +33,12 @@ export function aiScore(text) {
   const score = Math.round(100 * parts.reduce((a, p, i) => a + p * weights[i], 0));
 
   const signals = [];
-  if (phrase > 0.3) signals.push(`${hits} ta AI-sounding phrase`);
-  if (flat > 0.5) signals.push("sentence gulo prai eki length er");
-  if (starter > 0.4) signals.push("onek sentence 'Moreover/Furthermore' diye shuru");
-  if (stiff > 0.7 && latin) signals.push("kono contraction nei (it's, don't)");
-  if (dash > 0.4) signals.push("onek em-dash (—)");
+  if (phrase > 0.3) signals.push(`${hits} AI-sounding phrase${hits === 1 ? "" : "s"}`);
+  if (flat > 0.5) signals.push("sentences are all about the same length");
+  if (starter > 0.4) signals.push("many sentences start with 'Moreover' or 'Furthermore'");
+  if (stiff > 0.7 && latin) signals.push("no contractions (it's, don't)");
+  if (dash > 0.4) signals.push("lots of em-dashes (—)");
 
-  const [label, tone] = score <= 30 ? ["Manusher moto", "ok"] : score <= 60 ? ["Mishro", "warn"] : ["AI er moto", "bad"];
+  const [label, tone] = score <= 30 ? ["Human-like", "ok"] : score <= 60 ? ["Mixed", "warn"] : ["AI-like", "bad"];
   return { score, label, tone, signals };
 }

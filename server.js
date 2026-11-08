@@ -29,7 +29,7 @@ const server = http.createServer(async (req, res) => {
   const route = routes[url.pathname];
   if (route) {
     try { req.body = req.method === "POST" ? await readJson(req) : {}; }
-    catch { res.writeHead(400, { "Content-Type": "application/json" }); return res.end('{"error":"Request ta porte parlam na."}'); }
+    catch { res.writeHead(400, { "Content-Type": "application/json" }); return res.end('{"error":"Could not read the request."}'); }
     return route(req, res);
   }
   const file = path.normalize(path.join(publicDir, url.pathname === "/" ? "index.html" : url.pathname));
@@ -44,5 +44,5 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-if (!process.env.ANTHROPIC_API_KEY) console.warn("Warning: ANTHROPIC_API_KEY set kora nei. Rewrite kaj korbe na.");
-server.listen(PORT, () => console.log(`Manush Lekha cholche: http://localhost:${PORT}`));
+if (!process.env.ANTHROPIC_API_KEY) console.warn("Warning: ANTHROPIC_API_KEY is not set. Rewrites will not work.");
+server.listen(PORT, () => console.log(`Humanizer is running at http://localhost:${PORT}`));
