@@ -1,0 +1,481 @@
+<title>Manush Lekha</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Hind+Siliguri:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: editor's desk — source left, rewrite right, a proofing strip of checks underneath */
+:root {
+  --bg: #F3F5F8;
+  --paper: #FFFFFF;
+  --ink: #18202E;
+  --muted: #5A6577;
+  --line: #DCE1E9;
+  --accent: #1F5FD1;
+  --accent-ink: #FFFFFF;
+  --hl: #FFE36E;
+  --add-bg: #D6F5E0; --add-fg: #0E6B34;
+  --del-bg: #FDE0DE; --del-fg: #A3221A;
+  --ok: #138A47; --warn: #B86A00; --bad: #C3302A;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Hind Siliguri", "Noto Sans Bengali", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0F141C; --paper: #171E29; --ink: #E7ECF3; --muted: #97A3B6; --line: #2A3444;
+  --accent: #6C9BFF; --accent-ink: #0B1220; --hl: #6B5A12;
+  --add-bg: #133A24; --add-fg: #7FE0A4; --del-bg: #45201E; --del-fg: #FF9C94;
+  --ok: #4FD08A; --warn: #F0AE4C; --bad: #FF7A72; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0F141C; --paper: #171E29; --ink: #E7ECF3; --muted: #97A3B6; --line: #2A3444;
+  --accent: #6C9BFF; --accent-ink: #0B1220; --hl: #6B5A12;
+  --add-bg: #133A24; --add-fg: #7FE0A4; --del-bg: #45201E; --del-fg: #FF9C94;
+  --ok: #4FD08A; --warn: #F0AE4C; --bad: #FF7A72; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(28px, 4vw, 40px); letter-spacing: -0.02em; margin: 0; line-height: 1.1 }
+h1 span { color: var(--accent) }
+.tag { color: var(--muted); margin: 4px 0 0; max-width: 60ch }
+h2 { font-family: var(--f-display); font-weight: 600; font-size: 15px; margin: 0; letter-spacing: 0.01em }
+.label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600 }
+
+.controls { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: flex-end; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px }
+.field { display: grid; gap: 6px; min-width: 0 }
+.field.grow { flex: 1 1 240px }
+.seg { display: flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 8px; overflow: hidden }
+.seg button { font: inherit; font-size: 14px; border: 0; background: transparent; color: var(--ink); padding: 6px 12px; cursor: pointer; border-right: 1px solid var(--line) }
+.seg button:last-child { border-right: 0 }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper) }
+select, input[type="text"] { font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; width: 100% }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+.desk { display: grid; grid-template-columns: 1fr 1fr; gap: 16px }
+@media (max-width: 820px) { .desk { grid-template-columns: 1fr } }
+.pane { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; min-width: 0 }
+.pane-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap }
+.pane-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--line); flex-wrap: wrap; font-size: 13px; color: var(--muted) }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 12.5px }
+
+.editor { position: relative; height: 340px }
+.editor .backdrop, .editor textarea { position: absolute; inset: 0; margin: 0; padding: 14px; font-family: var(--f-body); font-size: 16px; line-height: 1.6;
+  white-space: pre-wrap; overflow-wrap: break-word; scrollbar-gutter: stable; border: 0; letter-spacing: normal }
+.editor .backdrop { overflow: hidden; color: transparent; pointer-events: none }
+.editor .backdrop mark { background: var(--hl); color: transparent; border-radius: 3px }
+.editor textarea { background: transparent; color: var(--ink); resize: none; overflow-y: auto; width: 100%; height: 100% }
+.output { height: 340px; overflow-y: auto; padding: 14px; white-space: pre-wrap; overflow-wrap: break-word; line-height: 1.6 }
+.output.placeholder { color: var(--muted) }
+.output ins { background: var(--add-bg); color: var(--add-fg); text-decoration: none; border-radius: 3px }
+.output del { background: var(--del-bg); color: var(--del-fg); border-radius: 3px }
+.output mark { background: var(--hl); color: inherit; border-radius: 3px }
+.example-badge { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--warn); border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px }
+
+.tabs { display: flex; gap: 2px; background: var(--bg); border-radius: 8px; padding: 2px }
+.tabs button { font: inherit; font-size: 13px; border: 0; background: transparent; color: var(--muted); padding: 4px 10px; border-radius: 6px; cursor: pointer }
+.tabs button[aria-selected="true"] { background: var(--paper); color: var(--ink); box-shadow: 0 0 0 1px var(--line) }
+
+.btn { font: inherit; font-size: 14px; font-weight: 600; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--paper); color: var(--ink) }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); padding: 10px 20px; font-size: 15px }
+.btn:disabled { opacity: 0.5; cursor: default }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center }
+.status { font-size: 14px; color: var(--muted) }
+.status.err { color: var(--bad) }
+
+.checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px }
+.check { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; align-content: start; min-width: 0 }
+.check-head { display: flex; justify-content: space-between; align-items: center; gap: 8px }
+.pill { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 10px; white-space: nowrap }
+.pill.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent) }
+.pill.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent) }
+.pill.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent) }
+.pill.idle { color: var(--muted); background: var(--bg) }
+.check p { margin: 0; font-size: 14px; color: var(--muted) }
+.check ul { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 4px }
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font-size: 13px; background: var(--hl); color: var(--ink); border-radius: 4px; padding: 1px 7px }
+.chip.missing { background: var(--del-bg); color: var(--del-fg) }
+.chip.kept { background: var(--add-bg); color: var(--add-fg) }
+
+.rhythm { display: grid; gap: 8px }
+.rhythm-row { display: grid; grid-template-columns: 64px 1fr; gap: 8px; align-items: end }
+.bars { display: flex; align-items: flex-end; gap: 3px; height: 44px; border-bottom: 1px solid var(--line); overflow: hidden }
+.bars i { display: block; flex: 1 1 0; max-width: 18px; min-width: 3px; background: var(--muted); border-radius: 2px 2px 0 0; opacity: 0.7 }
+.bars.out i { background: var(--accent); opacity: 1 }
+.note { font-size: 13px; color: var(--muted); max-width: 80ch; margin: 0 }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Manush <span>Lekha</span></h1>
+      <p class="tag">AI lekhake manusher moto natural kore, kintu mane, number ar naam thik rekhe. বাংলা ও English দুটোই চলে।</p>
+    </div>
+  </header>
+
+  <section class="controls" aria-label="Rewrite settings">
+    <div class="field">
+      <span class="label" id="tone-l">Tone</span>
+      <div class="seg" role="group" aria-labelledby="tone-l" id="tone">
+        <button type="button" data-v="natural" aria-pressed="true">Natural</button>
+        <button type="button" data-v="casual" aria-pressed="false">Casual</button>
+        <button type="button" data-v="formal" aria-pressed="false">Formal</button>
+        <button type="button" data-v="academic" aria-pressed="false">Academic</button>
+        <button type="button" data-v="blog" aria-pressed="false">Blog</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="label" id="str-l">Koto ta bodlabe</span>
+      <div class="seg" role="group" aria-labelledby="str-l" id="strength">
+        <button type="button" data-v="light" aria-pressed="false">Halka</button>
+        <button type="button" data-v="medium" aria-pressed="true">Majhari</button>
+        <button type="button" data-v="strong" aria-pressed="false">Beshi</button>
+      </div>
+    </div>
+    <div class="field">
+      <label class="label" for="lang">Output language</label>
+      <select id="lang">
+        <option value="same">Input er moto</option>
+        <option value="English">English</option>
+        <option value="Bangla (Bengali script)">বাংলা</option>
+        <option value="Banglish (Bangla in Latin letters)">Banglish</option>
+      </select>
+    </div>
+    <div class="field grow">
+      <label class="label" for="locked">Lock kora word (comma diye) — egula bodlabe na</label>
+      <input type="text" id="locked" value="Facebook, TikTok, Bangladesh" placeholder="e.g. brand name, technical term">
+    </div>
+  </section>
+
+  <section class="desk">
+    <div class="pane">
+      <div class="pane-head">
+        <h2>Apnar lekha</h2>
+        <span class="mono" id="in-count"></span>
+      </div>
+      <div class="editor">
+        <div class="backdrop" aria-hidden="true"><div id="backdrop-inner"></div></div>
+        <textarea id="input" aria-label="Original text" spellcheck="false"></textarea>
+      </div>
+      <div class="pane-foot">
+        <span><mark style="background:var(--hl);color:inherit;border-radius:3px;padding:0 4px">holud</mark> = AI-sounding phrase</span>
+        <button type="button" class="btn" id="clear">Clear</button>
+      </div>
+    </div>
+
+    <div class="pane">
+      <div class="pane-head">
+        <div class="actions">
+          <h2>Natural version</h2>
+          <span class="example-badge" id="example-badge">Example</span>
+        </div>
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab-result" aria-selected="true">Result</button>
+          <button type="button" role="tab" id="tab-diff" aria-selected="false">Ki bodlalo</button>
+        </div>
+      </div>
+      <div class="output" id="output" role="tabpanel" aria-live="polite"></div>
+      <div class="pane-foot">
+        <span class="mono" id="out-count"></span>
+        <button type="button" class="btn" id="copy">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button type="button" class="btn primary" id="go">Humanize koro</button>
+    <button type="button" class="btn" id="again" hidden>Arekbar try koro</button>
+    <button type="button" class="btn" id="stop" hidden>Stop</button>
+    <span class="status" id="status" role="status"></span>
+  </div>
+
+  <section class="checks" aria-label="Quality checks">
+    <div class="check">
+      <div class="check-head"><h2>Mane thik ache?</h2><span class="pill idle" id="m-pill">—</span></div>
+      <p id="m-verdict">Rewrite er por Claude original ar notun lekha milie dekhbe kono idea harie gelo kina.</p>
+      <div id="m-detail"></div>
+    </div>
+    <div class="check">
+      <div class="check-head"><h2>Number ar locked word</h2><span class="pill idle" id="f-pill">—</span></div>
+      <div class="chips" id="f-chips"></div>
+      <p id="f-note"></p>
+    </div>
+    <div class="check">
+      <div class="check-head"><h2>AI-sounding phrase</h2><span class="pill idle" id="a-pill">—</span></div>
+      <div class="chips" id="a-chips"></div>
+      <p id="a-note"></p>
+    </div>
+    <div class="check">
+      <div class="check-head"><h2>Sentence rhythm</h2><span class="pill idle" id="r-pill">—</span></div>
+      <div class="rhythm">
+        <div class="rhythm-row"><span class="label">Age</span><div class="bars" id="r-in"></div></div>
+        <div class="rhythm-row"><span class="label">Pore</span><div class="bars out" id="r-out"></div></div>
+      </div>
+      <p id="r-note">Manush chhoto-boro mishie lekhe. AI er sentence gulo prai shob eki length er hoy.</p>
+    </div>
+  </section>
+
+  <p class="note">Mone rakhben: kono tool-i AI detector pass korar guarantee dite pare na, ar detector gulo nijeo bhul kore. Ei site er kaj lekhake porte bhalo ar natural kora. School ba office e AI use er niyom thakle sheta mene cholun.</p>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
+  const status = $("status"), goBtn = $("go"), againBtn = $("again"), stopBtn = $("stop");
+
+  const EXAMPLE_IN = "In today's fast-paced world, social media plays a vital role in shaping how young people communicate. Moreover, it is important to note that platforms like Facebook and TikTok have fundamentally transformed the landscape of friendship. Furthermore, studies show that 62% of teenagers in Bangladesh use social media for more than 3 hours a day. In conclusion, social media is a double-edged sword that offers both opportunities and challenges.";
+  const EXAMPLE_OUT = "Social media now shapes the way young people talk to each other. Facebook and TikTok have changed what friendship even looks like. In Bangladesh, studies show 62% of teenagers spend more than 3 hours a day on these apps. So it cuts both ways: there are real opportunities here, and real problems too.";
+  const EXAMPLE_CHECK = { score: 94, verdict: "Shob main idea ar fact ache; shudhu 'double-edged sword' kotha ta shohoj bhashay bola hoyeche.", missing: [], added: [] };
+
+  // Phrases that make text read as machine-written.
+  const AI_PHRASES = [
+    "in today's fast-paced world","in today's digital age","in today's world","it is important to note","it's important to note","it is worth noting",
+    "plays a vital role","plays a crucial role","plays a pivotal role","a wide range of","in conclusion","in summary","to sum up","ultimately",
+    "moreover","furthermore","additionally","notably","delve","delves","delving","tapestry","testament","navigate the complexities","landscape",
+    "seamless","seamlessly","leverage","unlock","embark","realm","robust","pivotal","crucial","foster","elevate","ever-evolving","game-changer",
+    "cutting-edge","harness","empower","intricate","meticulous","showcase","underscore","double-edged sword","fundamentally","transformative",
+    "উল্লেখ্য যে","পরিশেষে বলা যায়","নিঃসন্দেহে","এক কথায় বলা যায়","বর্তমান যুগে","অত্যন্ত গুরুত্বপূর্ণ ভূমিকা"
+  ].sort((a, b) => b.length - a.length);
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const AI_RE = new RegExp(AI_PHRASES.map(p => /^[\x00-\x7f]+$/.test(p) ? "\\b" + esc(p) + "\\b" : esc(p)).join("|"), "gi");
+  const html = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  const markAI = (text) => {
+    let out = "", last = 0;
+    text.replace(AI_RE, (m, i) => { out += html(text.slice(last, i)) + "<mark>" + html(m) + "</mark>"; last = i + m.length; return m; });
+    return out + html(text.slice(last));
+  };
+  const findAI = (text) => {
+    const counts = new Map();
+    (text.match(AI_RE) || []).forEach(m => { const k = m.toLowerCase(); counts.set(k, (counts.get(k) || 0) + 1); });
+    return counts;
+  };
+  const words = (t) => (t.trim().match(/\S+/g) || []).length;
+  const sentences = (t) => (t.match(/[^.!?।]+[.!?।]+["')\]]*|[^.!?।]+$/g) || []).map(s => s.trim()).filter(Boolean);
+  const spread = (arr) => {
+    if (arr.length < 2) return 0;
+    const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+    return Math.sqrt(arr.reduce((a, b) => a + (b - mean) ** 2, 0) / arr.length) / mean;
+  };
+  const numbersIn = (t) => [...new Set((t.match(/\d[\d,.]*%?|[০-৯][০-৯,.]*%?/g) || []).map(n => n.replace(/[.,]$/, "")))];
+  const lockedTerms = () => $("locked").value.split(",").map(s => s.trim()).filter(Boolean);
+
+  // State
+  let state = { result: EXAMPLE_OUT, source: EXAMPLE_IN, example: true, tab: "result", check: EXAMPLE_CHECK };
+  const seg = (id) => $(id).querySelector('[aria-pressed="true"]').dataset.v;
+  ["tone", "strength"].forEach(id => $(id).addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  }));
+
+  // Input + highlight overlay
+  const syncBackdrop = () => {
+    backdropInner.innerHTML = markAI(input.value) + "\n ";
+    backdropInner.style.transform = `translateY(${-input.scrollTop}px)`;
+    $("in-count").textContent = `${words(input.value)} words · ${sentences(input.value).length} sentences`;
+  };
+  input.addEventListener("input", () => { syncBackdrop(); renderChecks(); });
+  input.addEventListener("scroll", () => { backdropInner.style.transform = `translateY(${-input.scrollTop}px)`; });
+  $("locked").addEventListener("input", renderChecks);
+  $("clear").addEventListener("click", () => { input.value = ""; syncBackdrop(); renderChecks(); input.focus(); });
+
+  // Word diff (LCS)
+  const diffHTML = (a, b) => {
+    const A = a.split(/(\s+)/), B = b.split(/(\s+)/);
+    if (A.length * B.length > 4_000_000) return html(b);
+    const n = A.length, m = B.length, dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+      dp[i][j] = A[i] === B[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    let i = 0, j = 0, out = "";
+    while (i < n && j < m) {
+      if (A[i] === B[j]) { out += html(A[i]); i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) { out += /^\s+$/.test(A[i]) ? "" : "<del>" + html(A[i]) + "</del> "; i++; }
+      else { out += /^\s+$/.test(B[j]) ? html(B[j]) : "<ins>" + html(B[j]) + "</ins>"; j++; }
+    }
+    while (i < n) { if (!/^\s+$/.test(A[i])) out += " <del>" + html(A[i]) + "</del>"; i++; }
+    while (j < m) { out += /^\s+$/.test(B[j]) ? html(B[j]) : "<ins>" + html(B[j]) + "</ins>"; j++; }
+    return out;
+  };
+
+  const renderOutput = () => {
+    $("example-badge").hidden = !state.example;
+    const has = !!state.result;
+    output.classList.toggle("placeholder", !has);
+    if (!has) output.textContent = "Bam dike lekha din, tarpor “Humanize koro” chapun.";
+    else if (state.tab === "diff") output.innerHTML = diffHTML(state.source, state.result);
+    else output.innerHTML = markAI(state.result);
+    $("out-count").textContent = has ? `${words(state.result)} words · ${sentences(state.result).length} sentences` : "";
+    $("tab-result").setAttribute("aria-selected", String(state.tab === "result"));
+    $("tab-diff").setAttribute("aria-selected", String(state.tab === "diff"));
+  };
+  $("tab-result").addEventListener("click", () => { state.tab = "result"; renderOutput(); });
+  $("tab-diff").addEventListener("click", () => { state.tab = "diff"; renderOutput(); });
+
+  const setPill = (id, cls, text) => { const p = $(id); p.className = "pill " + cls; p.textContent = text; };
+  const chip = (text, cls = "") => { const s = document.createElement("span"); s.className = "chip " + cls; s.textContent = text; return s; };
+
+  function renderChecks() {
+    const src = input.value, out = state.result;
+    // AI phrases
+    const inAI = findAI(src), outAI = out ? findAI(out) : null;
+    const target = outAI ?? inAI, total = [...target.values()].reduce((a, b) => a + b, 0);
+    const aChips = $("a-chips"); aChips.replaceChildren(...[...target.entries()].map(([k, c]) => chip(c > 1 ? `${k} ×${c}` : k)));
+    if (outAI) {
+      const before = [...inAI.values()].reduce((a, b) => a + b, 0);
+      setPill("a-pill", total === 0 ? "ok" : total <= 2 ? "warn" : "bad", total === 0 ? "Clean" : `${total} baki`);
+      $("a-note").textContent = `Original e chhilo ${before} ta, natural version e ${total} ta.`;
+    } else {
+      setPill("a-pill", total === 0 ? "ok" : "warn", `${total} ta pawa geche`);
+      $("a-note").textContent = total ? "Egula AI-er lekhay khub beshi dekha jay." : "Kono common AI phrase pawa jayni.";
+    }
+    // Rhythm
+    const lin = sentences(src).map(words), lout = out ? sentences(out).map(words) : [];
+    const maxLen = Math.max(1, ...lin, ...lout);
+    const bars = (el, arr) => el.replaceChildren(...arr.slice(0, 40).map(n => { const i = document.createElement("i"); i.style.height = Math.max(6, n / maxLen * 100) + "%"; i.title = n + " words"; return i; }));
+    bars($("r-in"), lin); bars($("r-out"), lout);
+    const sIn = spread(lin), sOut = spread(lout);
+    if (out && lout.length > 1) {
+      const pct = Math.round(sOut * 100);
+      setPill("r-pill", sOut >= 0.35 ? "ok" : sOut >= 0.2 ? "warn" : "bad", `Variation ${pct}%`);
+      $("r-note").textContent = `Sentence length variation: age ${Math.round(sIn * 100)}%, pore ${pct}%. 35% er beshi hole natural lage.`;
+    } else { setPill("r-pill", "idle", lin.length > 1 ? `Variation ${Math.round(sIn * 100)}%` : "—"); }
+    // Numbers + locked terms
+    const fChips = $("f-chips"); fChips.replaceChildren();
+    const items = [...numbersIn(src).map(n => ({ t: n, num: true })), ...lockedTerms().filter(t => src.toLowerCase().includes(t.toLowerCase())).map(t => ({ t }))];
+    if (!items.length) { setPill("f-pill", "idle", "—"); $("f-note").textContent = "Input e kono number ba locked word nei."; }
+    else if (!out) { items.forEach(x => fChips.append(chip(x.t))); setPill("f-pill", "idle", `${items.length} ta check hobe`); $("f-note").textContent = "Rewrite er por egula thik ache kina dekhabe."; }
+    else {
+      let miss = 0;
+      items.forEach(x => { const ok = out.toLowerCase().includes(x.t.toLowerCase()); if (!ok) miss++; fChips.append(chip((ok ? "✓ " : "✗ ") + x.t, ok ? "kept" : "missing")); });
+      setPill("f-pill", miss ? "bad" : "ok", miss ? `${miss} ta harieche` : "Shob thik");
+      $("f-note").textContent = miss ? "Lal gula notun lekhay nei. Arekbar try korun ba nije thik kore nin." : "Shob number ar locked word hubohu ache.";
+    }
+    renderMeaning();
+  }
+
+  function renderMeaning() {
+    const c = state.check, detail = $("m-detail"); detail.replaceChildren();
+    if (c === "pending") { setPill("m-pill", "idle", "Check hocche…"); $("m-verdict").textContent = "Claude original ar notun lekha milie dekhche…"; return; }
+    if (!c) { setPill("m-pill", "idle", "—"); $("m-verdict").textContent = state.result ? "Mane check kora jayni." : "Rewrite er por Claude original ar notun lekha milie dekhbe kono idea harie gelo kina."; return; }
+    setPill("m-pill", c.score >= 90 ? "ok" : c.score >= 75 ? "warn" : "bad", `${c.score}/100`);
+    $("m-verdict").textContent = c.verdict || "";
+    const list = (title, arr) => {
+      if (!arr || !arr.length) return;
+      const h = document.createElement("span"); h.className = "label"; h.textContent = title;
+      const ul = document.createElement("ul"); arr.forEach(x => { const li = document.createElement("li"); li.textContent = x; ul.append(li); });
+      detail.append(h, ul);
+    };
+    list("Harie geche", c.missing); list("Notun jog hoyeche", c.added);
+  }
+
+  // Claude
+  const TONES = {
+    natural: "plain and natural, like a thoughtful person explaining it to a friend who is smart",
+    casual: "relaxed and conversational, contractions welcome",
+    formal: "professional and clear, suitable for work email or a report, but not stiff",
+    academic: "academic and precise, suitable for an assignment, but readable and free of filler",
+    blog: "engaging blog style with a personal voice, still factual"
+  };
+  const STRENGTH = {
+    light: "Make light edits only: fix stiff or robotic phrasing, keep most sentences and their order.",
+    medium: "Rewrite sentences freely, but keep the paragraph structure and order of ideas.",
+    strong: "Restructure freely for flow, merging or splitting sentences as needed, while keeping every idea."
+  };
+  const buildPrompt = (src) => {
+    const lang = $("lang").value, locked = lockedTerms();
+    return `Rewrite the TEXT below so it reads like it was written by a real person.
+
+Rules:
+- Keep the meaning exactly. Keep every fact, claim, number, date, name and example. Do not add any new facts, opinions or examples.
+- Tone: ${TONES[seg("tone")]}.
+- ${STRENGTH[seg("strength")]}
+- Mix short and long sentences. Prefer concrete, everyday words.
+- Avoid these filler phrases and similar ones: ${AI_PHRASES.slice(0, 40).join(", ")}.
+- Do not use em-dashes.
+${locked.length ? `- Keep these terms exactly as written: ${locked.join(", ")}.\n` : ""}- Output language: ${lang === "same" ? "the same language and script as the TEXT" : lang}.
+- Return only the rewritten text. No preface, no notes, no quotes around it.
+
+TEXT:
+${src}`;
+  };
+  const checkPrompt = (a, b) => `Compare ORIGINAL and REWRITE. Judge only whether the meaning is preserved (ignore style and language changes).
+Return JSON only, in this shape:
+{"score": <integer 0-100, how fully the rewrite keeps the original's meaning>, "verdict": "<one short sentence in simple Banglish (Bangla written in English letters)>", "missing": ["<idea or fact in ORIGINAL that the REWRITE lost>"], "added": ["<claim in REWRITE not supported by ORIGINAL>"]}
+At most 4 items per list; empty lists if none.
+
+ORIGINAL:
+${a}
+
+REWRITE:
+${b}`;
+
+  const ERR = {
+    not_granted: "Claude use korar permission dewa hoyni. Page reload kore Allow korun.",
+    rate_limited: "Ektu beshi request hoye geche. Kichukkhon por abar try korun.",
+    prompt_too_large: "Lekha ta onek boro. Choto choto bhag kore din.",
+    refused: "Claude ei lekha ta rewrite korte rajhi hoyni.",
+    session_expired: "Session sesh hoye geche. Page reload korun.",
+    sampling_disabled: "Ei account e Claude use bondho kora ache.",
+    capability_disabled: "Ei account e Claude use bondho kora ache.",
+    empty_completion: "Claude kichu ferot dey ni. Abar try korun.",
+    upstream_error: "Claude ekhon uttor dite parche na. Ektu por abar try korun."
+  };
+  const errText = (e) => ERR[e?.code] || "Kichu ekta gondogol hoyeche. Abar try korun.";
+
+  let sample = null, ctl = null, busy = false;
+  const setBusy = (b) => { busy = b; goBtn.disabled = b; againBtn.disabled = b; stopBtn.hidden = !b; };
+
+  async function run(fresh) {
+    const src = input.value.trim();
+    if (!src) { status.className = "status err"; status.textContent = "Age bam dike kichu lekha din."; input.focus(); return; }
+    if (!sample) { status.className = "status err"; status.textContent = "Ei view e Claude available na. Claude.ai te page ta khulun."; return; }
+    ctl = new AbortController(); setBusy(true);
+    status.className = "status"; status.textContent = "Thinking…";
+    state = { ...state, source: src, result: "", example: false, check: null, tab: "result" };
+    renderOutput(); renderChecks();
+    try {
+      const { text, truncated } = await sample(buildPrompt(src), {
+        signal: ctl.signal, cache: fresh ? false : undefined,
+        onText: ({ text }) => { status.textContent = "Likhche…"; state.result = text; renderOutput(); }
+      });
+      state.result = text.trim(); renderOutput();
+      status.textContent = truncated ? "Lekha majh pothe kete geche. Choto bhag kore din." : "Hoye geche. Ebar mane check hocche…";
+      againBtn.hidden = false;
+      state.check = "pending"; renderChecks();
+      try {
+        const c = await sample.json(checkPrompt(src, state.result), { signal: ctl.signal });
+        state.check = { score: Math.max(0, Math.min(100, Math.round(+c.score || 0))), verdict: String(c.verdict || ""), missing: (c.missing || []).map(String), added: (c.added || []).map(String) };
+        status.textContent = "Hoye geche.";
+      } catch (e) { state.check = null; status.textContent = e.code === "cancelled" ? "Mane check bondho kora hoyeche." : "Rewrite hoyeche, kintu mane check kora gelo na."; }
+      renderChecks();
+    } catch (e) {
+      state.result = (e.text || "").trim(); renderOutput();
+      if (e.code === "cancelled") status.textContent = "Bondho kora hoyeche.";
+      else { status.className = "status err"; status.textContent = errText(e); }
+      if (e.code === "not_granted" || e.code === "sampling_disabled") goBtn.disabled = true;
+      state.check = null; renderChecks();
+    } finally { setBusy(false); if (status.className.includes("err") && goBtn.disabled) stopBtn.hidden = true; }
+  }
+  goBtn.addEventListener("click", () => run(false));
+  againBtn.addEventListener("click", () => run(true));
+  stopBtn.addEventListener("click", () => ctl?.abort());
+
+  $("copy").addEventListener("click", async () => {
+    if (!state.result) return;
+    try { await navigator.clipboard.writeText(state.result); $("copy").textContent = "Copied"; }
+    catch { state.tab = "result"; renderOutput(); const r = document.createRange(); r.selectNodeContents(output); const s = getSelection(); s.removeAllRanges(); s.addRange(r); $("copy").textContent = "Select hoyeche, Ctrl+C chapun"; }
+    setTimeout(() => { $("copy").textContent = "Copy"; }, 2000);
+  });
+
+  // Boot with the example loaded
+  input.value = EXAMPLE_IN;
+  syncBackdrop(); renderOutput(); renderChecks();
+  if (window.claude?.use) {
+    window.claude.use("sample").then(s => { sample = s; if (!s) { status.textContent = "Ei view e Claude available na. Claude.ai te page ta khulun."; } }).catch(() => {});
+  } else { status.textContent = "Ei view e Claude available na. Claude.ai te page ta khulun."; }
+})();
+</script>
