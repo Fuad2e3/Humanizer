@@ -27,9 +27,12 @@ export const PHRASES = [
   ["plays a vital role in", ["is key to", "matters a lot for"]],
   ["plays a crucial role in", ["is key to", "matters a lot for"]],
   ["plays a pivotal role in", ["is key to", "matters a lot for"]],
-  ["play a vital role in", ["are key to", "matter a lot for"]],
-  ["play a crucial role in", ["are key to", "matter a lot for"]],
-  ["play a pivotal role in", ["are key to", "matter a lot for"]],
+  ["play a vital role in", ["matter a lot for", "matter a lot to"]],
+  ["play a vital role", ["matter a lot"]],
+  ["play a crucial role in", ["matter a lot for", "matter a lot to"]],
+  ["play a crucial role", ["matter a lot"]],
+  ["play a pivotal role in", ["matter a lot for", "matter a lot to"]],
+  ["play a pivotal role", ["matter a lot"]],
   ["plays a vital role", ["matters a lot", "is key"]],
   ["plays a crucial role", ["matters a lot", "is key"]],
   ["plays a pivotal role", ["matters a lot", "is key"]],
@@ -55,6 +58,9 @@ export const PHRASES = [
   ["paving the way for", ["opening the door to"]],
   ["paves the way", ["opens the door"]],
   ["pave the way", ["open the door"]],
+  ["has shed light on", ["has explained", "has cleared up"]],
+  ["have shed light on", ["have explained", "have cleared up"]],
+  ["had shed light on", ["had explained"]],
   ["shed light on", ["explain", "clear up"]],
   ["sheds light on", ["explains", "clears up"]],
   ["shedding light on", ["explaining"]],
@@ -64,7 +70,9 @@ export const PHRASES = [
   ["in essence", ["basically"]],
   ["at its core,", ["", "Basically,"]],
   ["at its core", ["at heart"]],
-  ["stands as", ["is"]],
+  ["stands as a", ["is a"]],
+  ["stands as an", ["is an"]],
+  ["stands as one of", ["is one of"]],
   ["serves as a", ["is a", "works as a"]],
   ["serves as an", ["is an", "works as an"]],
   ["a rich tapestry of", ["a rich mix of"]],
@@ -84,7 +92,10 @@ export const PHRASES = [
   ["a game-changer", ["a big deal"]],
   ["game-changer", ["big change"]],
   ["game changer", ["big change"]],
+  ["at the cutting-edge of", ["at the front of"]],
+  ["at the cutting edge of", ["at the front of"]],
   ["cutting-edge", ["latest", "modern"]],
+  ["most optimal", ["best"]],
   ["ever-evolving", ["fast-changing", "changing"]],
   ["keen eye", ["sharp eye"]],
   ["embark on", ["start"]],
@@ -92,6 +103,24 @@ export const PHRASES = [
   ["embarked on", ["started"]],
   ["embarking on", ["starting"]],
   ["unlock the full potential of", ["get the most out of"]],
+  ["ensure that", ["make sure that"]],
+  ["ensures that", ["makes sure that"]],
+  ["ensured that", ["made sure that"]],
+  ["ensuring that", ["making sure that"]],
+  ["leverage the", ["use the"]],
+  ["leverage our", ["use our"]],
+  ["leverage their", ["use their"]],
+  ["leverage its", ["use its"]],
+  ["leverage your", ["use your"]],
+  ["leverage this", ["use this"]],
+  ["leverage these", ["use these"]],
+  ["foster a", ["build a", "encourage a"]],
+  ["foster the", ["build the", "encourage the"]],
+  ["foster an", ["build an"]],
+  ["foster greater", ["build greater"]],
+  ["harness the", ["use the"]],
+  ["harness its", ["use its"]],
+  ["harness their", ["use their"]],
   ["unlock the potential of", ["make the most of"]]
 ];
 
@@ -121,7 +150,10 @@ export const WORDY = [
   ["subsequent to", ["after"]],
   ["a large number of", ["many"]],
   ["a significant number of", ["many"]],
+  ["the majority of the", ["most of the"]],
   ["the majority of", ["most"]],
+  ["a large number of the", ["many of the"]],
+  ["a significant number of the", ["many of the"]],
   ["for the purpose of", ["for"]],
   ["provide assistance to", ["help"]],
   ["conduct an analysis of", ["analyze"]],
@@ -135,18 +167,22 @@ export const WORDY = [
 // Single stiff or AI-flavored words.
 export const WORDS = [
   ...v(["utilize", "utilizes", "utilized", "utilizing"], ["use", "uses", "used", "using"]),
-  ...v(["leverage", "leverages", "leveraged", "leveraging"], ["use", "uses", "used", "using"], ["draw on", "draws on", "drew on", "drawing on"]),
+  // "leverage" alone is often a noun; only the verb phrases in PHRASES are replaced.
+  ...v(["leverages", "leveraged", "leveraging"], ["uses", "used", "using"], ["draws on", "drew on", "drawing on"]),
   ...v(["delve", "delves", "delved", "delving"], ["dig", "digs", "dug", "digging"], ["look", "looks", "looked", "looking"]),
-  ...v(["foster", "fosters", "fostered", "fostering"], ["build", "builds", "built", "building"], ["encourage", "encourages", "encouraged", "encouraging"]),
-  ...v(["elevate", "elevates", "elevated", "elevating"], ["improve", "improves", "improved", "improving"], ["raise", "raises", "raised", "raising"]),
-  ...v(["harness", "harnesses", "harnessed", "harnessing"], ["use", "uses", "used", "using"]),
+  // "foster" alone is often a noun ("foster care") or a name; only verb phrases are replaced.
+  ...v(["fosters", "fostered", "fostering"], ["builds", "built", "building"], ["encourages", "encouraged", "encouraging"]),
+  // "elevated" is usually an adjective ("elevated blood pressure"), so it is left alone.
+  ...v(["elevate", "elevates", "elevating"], ["improve", "improves", "improving"], ["raise", "raises", "raising"]),
+  // "harness" and "harnesses" are also nouns ("climbing harness").
+  ...v(["harnessed", "harnessing"], ["used", "using"]),
   ...v(["empower", "empowers", "empowered", "empowering"], ["help", "helps", "helped", "helping"]),
   ...v(["showcase", "showcases", "showcased", "showcasing"], ["show", "shows", "showed", "showing"]),
   ...v(["underscore", "underscores", "underscored", "underscoring"], ["show", "shows", "showed", "showing"], ["highlight", "highlights", "highlighted", "highlighting"]),
   ...v(["facilitate", "facilitates", "facilitated", "facilitating"], ["help", "helps", "helped", "helping"], ["ease", "eases", "eased", "easing"]),
   ...v(["commence", "commences", "commenced", "commencing"], ["start", "starts", "started", "starting"]),
-  ...v(["ensure", "ensures", "ensured", "ensuring"], ["make sure", "makes sure", "made sure", "making sure"]),
-  ...v(["unlock", "unlocks", "unlocked", "unlocking"], ["open up", "opens up", "opened up", "opening up"]),
+  // "unlocked" is usually an adjective ("the door was unlocked").
+  ...v(["unlock", "unlocks", "unlocking"], ["open up", "opens up", "opening up"]),
   ...v(["enhance", "enhances", "enhanced", "enhancing"], ["improve", "improves", "improved", "improving"]),
   ...v(["streamline", "streamlines", "streamlined", "streamlining"], ["simplify", "simplifies", "simplified", "simplifying"]),
   ...v(["bolster", "bolsters", "bolstered", "bolstering"], ["boost", "boosts", "boosted", "boosting"]),
@@ -170,7 +206,6 @@ export const WORDS = [
   ["unwavering", ["steady", "firm"]],
   ["commendable", ["impressive", "good"]],
   ["realm", ["area", "field"]],
-  ["tapestry", ["mix"]],
   ["myriad", ["countless"]],
   ["plethora", ["wealth"]],
   ["numerous", ["many"]],
@@ -252,16 +287,38 @@ export const BN_PHRASES = [
 // AI phrases that have no rule on purpose.
 export const SKIP = {
   "landscape": "Also a plain word for scenery; only phrases such as 'the digital landscape' are replaced.",
-  "testament": "Also a religious and legal word; only 'a testament to' and its forms are replaced."
+  "testament": "Also a religious and legal word; only 'a testament to' and its forms are replaced.",
+  "tapestry": "Also a real woven picture; only 'tapestry of' is replaced.",
+  "stands as": "Often literal ('it stands as it did'); only 'stands as a', 'stands as an' and 'stands as one of' are replaced.",
+  "leverage": "Also a noun ('gained leverage'); only verb uses such as 'to leverage' and 'leverages' are replaced.",
+  "foster": "Also a noun and a name ('foster care', 'Jodie Foster'); only verb uses such as 'to foster' are replaced.",
+  "harness": "Also a noun ('climbing harness'); only verb uses such as 'to harness' are replaced."
 };
 
 // Safe near-synonyms, used only to offer alternatives for a single sentence the visitor clicks.
 export const SIBLINGS = [
-  ["strong", "solid"], ["smooth", "easy"], ["careful", "thorough"], ["major", "big"], ["complete", "full"],
-  ["latest", "modern"], ["steady", "firm"], ["fast-changing", "changing"], ["impressive", "remarkable"],
+  ["strong", "solid"], ["smooth", "easy"], ["careful", "thorough"],
+  ["latest", "modern"], ["fast-changing", "changing"], ["impressive", "remarkable"],
   ["carefully", "closely"], ["mixed blessing", "two-sided thing"]
 ];
 export const OPENER_SIBLINGS = [
   ["Also,", "Plus,", "On top of that,"], ["So,", "As a result,"], ["In the end,", "Finally,"],
   ["In short,", "All in all,"], ["These days,", "Today,"], ["First,", "To start,"], ["Second,", "Next,"]
 ];
+
+// Options that read as casual. Formal and Academic tones skip them; when only casual options are left,
+// the original wording stays.
+export const CASUAL = new Set([
+  "These days,", "these days", "Basically,", "basically", "lots of", "a big deal", "plenty of", "all kinds of",
+  "matters a lot", "matter a lot", "matters a lot for", "matter a lot for", "matter a lot to", "make room for", "makes room for",
+  "dig", "digs", "dug", "digging", "clear up", "clears up", "has cleared up", "have cleared up",
+  "Plus,", "On top of that,", "And", "So", "So,"
+]);
+
+// "leverage", "foster" and "harness" are also nouns, so their base form is replaced only in a verb
+// position: after "to", a modal, "that"/"which"/"who", a pronoun or "and"/"or".
+const VERB_BEFORE = ["to", "must", "can", "could", "should", "will", "would", "may", "might", "that", "which", "who",
+  "we", "they", "you", "i", "and", "or", "also", "help", "helps", "cannot", "can't"];
+for (const [verb, reps] of [["leverage", ["use", "draw on"]], ["foster", ["build", "encourage"]], ["harness", ["use"]]]) {
+  for (const w of VERB_BEFORE) PHRASES.push([`${w} ${verb}`, reps.map((r) => `${w} ${r}`)]);
+}

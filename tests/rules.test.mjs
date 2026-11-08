@@ -133,7 +133,7 @@ test("a 15-word sentence without a conjunction does not split", () => {
 });
 
 test("two short sentences merge", () => {
-  assert.equal(mergeShort("It rained. The road flooded.", yes).text, "It rained, and the road flooded.");
+  assert.equal(mergeShort("It rained hard. The road flooded.", yes).text, "It rained hard, and the road flooded.");
 });
 
 test("a sentence starting with a name is never merged", () => {

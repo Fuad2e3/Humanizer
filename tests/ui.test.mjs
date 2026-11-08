@@ -220,6 +220,33 @@ test("the score is labelled honestly and Quick mode's privacy is stated", { skip
   await page.close();
 });
 
+test("an old AI history entry on a static host uses local sentence options, with no request", { skip }, async () => {
+  const { page } = await openPage([], { engine: "quick", static: true });
+  const old = [{ id: "old1", at: Date.now() - 60000, source: "Moreover, it is crucial to leverage robust tools. " + CASUAL_EN,
+    settings: { tone: "natural", strength: "medium", locked: [] }, aiBefore: 70,
+    versions: [{ text: "Also, it is key to use solid tools. " + CASUAL_EN, check: null }] }];
+  await page.evaluate((h) => localStorage.setItem("humanizer-history", JSON.stringify(h)), old);
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+  const requests = [];
+  page.on("request", (r) => requests.push(r.url()));
+  await page.click("#open-history");
+  await page.click(".h-actions .btn:not(.ghost)");
+  await page.click("#output .sent >> nth=0");
+  await page.waitForSelector("#alt-body .alt-opt, #alt-body .alt-err");
+  assert.ok((await page.$$("#alt-body .alt-opt")).length >= 1, await page.textContent("#alt-body"));
+  assert.deepEqual(requests, []);
+  await page.close();
+});
+
+test("mode descriptions match Quick mode", { skip }, async () => {
+  const { page } = await openPage([], { engine: "quick", static: true });
+  await page.waitForLoadState("networkidle");
+  const titles = await page.$$eval("#strength button", (bs) => bs.map((b) => b.title).join(" | "));
+  assert.ok(!/Rewrites sentences|Restructures everything/.test(titles), titles);
+  await page.close();
+});
+
 test("with a server the engine choice appears and AI uses the API", { skip }, async () => {
   const { page, calls } = await openPage([CASUAL_EN], { engine: "ai" });
   assert.equal(await page.isVisible("#engine"), true);
