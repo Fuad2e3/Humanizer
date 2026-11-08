@@ -1,8 +1,8 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { aiScore } from "./detect.js?v=202611080935";
-import { words, spread } from "./text.js?v=202611080935";
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS } from "./rules-data.js?v=202611080935";
+import { aiScore } from "./detect.js?v=202611080937";
+import { words, spread } from "./text.js?v=202611080937";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS } from "./rules-data.js?v=202611080937";
 
 const MARK = "";   // where something was deleted; tidy() cleans up around it
 const CAP = "";    // capitalize the next letter

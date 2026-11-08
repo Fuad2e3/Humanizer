@@ -206,6 +206,20 @@ test("history saves a quick run", { skip }, async () => {
   await page.close();
 });
 
+test("the score is labelled honestly and Quick mode's privacy is stated", { skip }, async () => {
+  const { page } = await openPage([], { engine: "quick", static: true });
+  const body = await page.textContent("body");
+  assert.match(body, /AI pattern score/);
+  assert.match(body, /GPTZero or Turnitin may score differently/);
+  assert.match(body, /never leaves your device/);
+  for (const f of ["", "features.html", "faq.html", "pricing.html"]) {
+    await page.goto(BASE + f);
+    const text = await page.textContent("body");
+    assert.ok(!/Enter your Claude API key|Claude compares/.test(text), `${f || "index"} still mentions the old setup`);
+  }
+  await page.close();
+});
+
 test("with a server the engine choice appears and AI uses the API", { skip }, async () => {
   const { page, calls } = await openPage([CASUAL_EN], { engine: "ai" });
   assert.equal(await page.isVisible("#engine"), true);
