@@ -12,7 +12,25 @@ AI diye lekha text ke manusher moto natural kore rewrite kore. Kintu mane, numbe
 | Ki bodlalo bojha jay na | "Ki bodlalo" tab e word dhore dhore diff dekhay |
 | AI-sounding lekha | "moreover", "plays a vital role" er moto phrase holud kore highlight kore. Sentence length koto mishano, sheta chart e dekhay |
 
-## Local e chalano
+## Website kothay chalano jay
+
+### 1. GitHub Pages (free, server lage na)
+
+Website: https://fuad2e3.github.io/Humanizer/
+
+Ekhane kono server nei. Tai je use korbe, she page er upore nijer Claude API key bosabe ([key kothay pabo](https://console.anthropic.com/settings/keys)). Key ta tar browser theke sorasori Anthropic e jay, onno kothao jay na. "Ei browser e mone rakho" tick dile porer bar abar key dite hoy na.
+
+Chalu korte: repo **Settings → Pages → Source: Deploy from a branch → `main` / `(root)` → Save**.
+
+### 2. Vercel (visitor er key lage na)
+
+Server e apnar key thake, tai visitor ra key chhara-i use korte pare. Khoroch apnar account theke jay.
+
+1. https://vercel.com e GitHub diye login korun, tarpor **Add New → Project** theke ei repo ta import korun.
+2. **Environment Variables** e `ANTHROPIC_API_KEY` add korun.
+3. **Deploy** chapun.
+
+### 3. Nijer computer e
 
 Node.js 22 ba tar beshi version lagbe.
 
@@ -24,13 +42,7 @@ npm start
 
 Browser e khulun: http://localhost:3000
 
-API key nin https://console.anthropic.com theke.
-
-## Vercel e deploy
-
-1. https://vercel.com e GitHub diye login korun, tarpor **Add New → Project** theke ei repo ta import korun.
-2. **Environment Variables** e `ANTHROPIC_API_KEY` add korun.
-3. **Deploy** chapun.
+Page nije bujhe ney kon mode e cholche. Server thakle server diye kaj kore. Na thakle API key chaay.
 
 ## Settings (environment variable)
 
@@ -44,8 +56,12 @@ API key nin https://console.anthropic.com theke.
 ## Folder
 
 - `public/index.html`: website (frontend)
+- `public/core.js`: prompt ar niyom, server ar browser duijon-i eta use kore
+- `public/vendor/anthropic.js`: browser er jonno Claude SDK (`npm run build:vendor` diye banano)
+- `index.html`: GitHub Pages ke `public/` e niye jay
 - `api/rewrite.js`: lekha rewrite kore, stream kore pathay
 - `api/check.js`: mane thik ache kina check kore
+- `api/health.js`: page ke janay j server ache
 - `lib/humanize.js`: Claude er prompt ar API call
 - `server.js`: local e chalanor server
 - `claude-artifact/`: claude.ai artifact version, server chhara chole
