@@ -5,7 +5,8 @@ export const MODEL_DEFAULT = "claude-opus-5-5";
 export const MODEL_FAST = "claude-haiku-5-5";
 export const MAX_INPUT_CHARS = 30000;
 export const FREE_WORD_LIMIT = 500;
-export const OWN_KEY_WORD_LIMIT = 3000;
+// Quick mode runs in the browser, so it can take longer texts.
+export const QUICK_WORD_LIMIT = 3000;
 export const MAX_VERSIONS = 3;
 
 export const countWords = (t) => (t.trim().match(/\S+/g) || []).length;

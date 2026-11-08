@@ -1,17 +1,29 @@
-import { parseOptions, rewriteRequest, checkRequest, readCheck, parseSentence, sentenceRequest, readSentence, describeError, FREE_WORD_LIMIT, OWN_KEY_WORD_LIMIT } from "./core.js?v=202611080927";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080927";
-import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611080927";
-import { readTextFile, ACCEPT } from "./files.js?v=202611080927";
-import { makeDocx } from "./docx-export.js?v=202611080927";
-import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080927";
+import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611080935";
+import { humanizeLocal, sentenceOptionsLocal } from "./rules.js?v=202611080935";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080935";
+import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611080935";
+import { readTextFile, ACCEPT } from "./files.js?v=202611080935";
+import { makeDocx } from "./docx-export.js?v=202611080935";
+import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080935";
 
 const $ = (id) => document.getElementById(id);
 const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
 const status = $("status"), goBtn = $("go"), againBtn = $("again"), stopBtn = $("stop");
 
 const EXAMPLE_IN = "In today's fast-paced world, social media plays a vital role in shaping how young people communicate. Moreover, it is important to note that platforms like Facebook and TikTok have fundamentally transformed the landscape of friendship. Furthermore, studies show that 62% of teenagers in Bangladesh use social media for more than 3 hours a day. In conclusion, social media is a double-edged sword that offers both opportunities and challenges.";
-const EXAMPLE_OUT = "Social media has changed how young people talk to each other. Facebook and TikTok? They've reshaped what friendship even looks like. In Bangladesh, studies show 62% of teenagers spend more than 3 hours a day on these apps. That's a lot of time. It brings real opportunities, and real problems too.";
-const EXAMPLE_CHECK = { score: 94, verdict: "All the main ideas and facts are kept; only the 'double-edged sword' phrase is said more plainly.", missing: [], added: [] };
+// The example result is the Quick engine's real output, so it shows what visitors will get.
+const EXAMPLE_RUN = humanizeLocal(EXAMPLE_IN, { locked: ["Facebook", "TikTok", "Bangladesh"] });
+
+// Counts the engine's changes by kind, for the report and history.
+function summarize(changes) {
+  const n = { words: 0, sentences: 0, contractions: 0 };
+  for (const c of changes) {
+    if (c.type === "split" || c.type === "merge") n.sentences++;
+    else if (c.type === "contraction") n.contractions++;
+    else n.words++;
+  }
+  return n;
+}
 
 const MODE_NAMES = { light: "Light", medium: "Balanced", strong: "Deep" };
 const TONE_NAMES = { natural: "Natural", casual: "Casual", formal: "Formal", academic: "Academic", blog: "Blog" };
@@ -19,13 +31,15 @@ const TONE_NAMES = { natural: "Natural", casual: "Casual", formal: "Formal", aca
 // ---------- State ----------
 let state = {
   source: EXAMPLE_IN,
-  versions: [{ text: EXAMPLE_OUT, check: EXAMPLE_CHECK, status: "done" }],
+  versions: [{ text: EXAMPLE_RUN.text, check: null, engine: "quick", summary: summarize(EXAMPLE_RUN.changes), status: "done" }],
   active: 0,
   example: true,
   tab: "result"
 };
 const cur = () => state.versions[state.active] || { text: "", check: null, status: "idle" };
-let wordLimit = FREE_WORD_LIMIT;
+// "quick": rules in the browser (always there). "ai": our server's /api, offered only when /api/health answers.
+let engine = "quick", serverReady = false, serverLimit = FREE_WORD_LIMIT;
+let wordLimit = QUICK_WORD_LIMIT;
 
 const fail = (msg) => { const e = new Error(msg); e.userMessage = msg; return e; };
 // Messages appear as a small toast at the bottom; errors stay a little longer.
@@ -44,6 +58,15 @@ const setSeg = (id, v) => { $(id).querySelectorAll("button[data-v]").forEach((x)
 ["strength", "versions"].forEach((id) => $(id).addEventListener("click", (e) => {
   const b = e.target.closest("button[data-v]"); if (b) setSeg(id, b.dataset.v);
 }));
+// Quick keeps the input language and has no style or purpose options, so those controls show only for AI.
+function setEngine(e) {
+  engine = e === "ai" && serverReady ? "ai" : "quick";
+  setSeg("engine", engine);
+  wordLimit = engine === "ai" ? serverLimit : QUICK_WORD_LIMIT;
+  document.querySelectorAll(".ai-only").forEach((el) => { el.hidden = engine !== "ai"; });
+  syncInput();
+}
+$("engine").addEventListener("click", (e) => { const b = e.target.closest("button[data-v]"); if (b) setEngine(b.dataset.v); });
 // ---------- Motion helpers ----------
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -222,6 +245,24 @@ function renderMeaning(v) {
   const c = v.check, detail = $("m-detail"), verdict = $("m-verdict");
   detail.replaceChildren();
   const ring = (n) => { $("m-ring").style.strokeDashoffset = String(163.4 * (1 - (n ?? 0) / 100)); countTo($("m-num"), n ?? null); };
+  // Quick mode has no AI meaning check; the card lists what the rules changed instead.
+  const quick = v.engine === "quick";
+  $("m-title").textContent = quick ? "Changes" : "Meaning kept";
+  $("m-ring-box").hidden = quick;
+  $("m-unit").textContent = quick ? " edits" : "/100";
+  if (quick) {
+    const s = v.summary || { words: 0, sentences: 0, contractions: 0 };
+    const total = s.words + s.sentences + s.contractions;
+    countTo($("m-num"), total);
+    setPill("m-pill", total ? "ok" : "idle", total ? "Wording only" : "Nothing found");
+    const parts = [];
+    if (s.words) parts.push(`${s.words} phrase${s.words === 1 ? "" : "s"} and word${s.words === 1 ? "" : "s"} replaced`);
+    if (s.sentences) parts.push(`${s.sentences} sentence${s.sentences === 1 ? "" : "s"} reshaped`);
+    if (s.contractions) parts.push(`${s.contractions} contraction${s.contractions === 1 ? "" : "s"}`);
+    verdict.hidden = false;
+    verdict.textContent = total ? parts.join(", ") + ". Ideas and order stay the same." : "No AI patterns the rules know were found.";
+    return;
+  }
   if (c === "pending") { ring(null); setPill("m-pill", "idle", "Checking…"); verdict.hidden = true; return; }
   if (!c) { ring(null); setPill("m-pill", "idle", "Not checked"); verdict.hidden = true; return; }
   ring(c.score);
@@ -241,71 +282,23 @@ function renderMeaning(v) {
 
 function renderAll() { renderVersionTabs(); renderOutput(); renderChecks(); }
 
-// ---------- Where Claude runs ----------
-// "server": our /api (Vercel or npm start). "browser": the visitor's own key, for static hosts like GitHub Pages.
-let mode = "server", Anthropic = null;
-const KEY_STORE = "humanizer-key";
-const keyStore = {
-  get() { try { return localStorage.getItem(KEY_STORE) || ""; } catch { return ""; } },
-  set(v) { try { v ? localStorage.setItem(KEY_STORE, v) : localStorage.removeItem(KEY_STORE); } catch {} }
-};
-
-async function detectMode() {
+// ---------- Is there a server? ----------
+// Static hosts such as GitHub Pages answer 404 here, and the page stays in Quick mode.
+// A server with an AI key adds the "AI" engine.
+async function detectServer() {
   try {
     const r = await fetch("api/health", { cache: "no-store" });
     if (r.ok) {
       const h = await r.json();
-      if (h.ok) {
-        if (Number.isInteger(h.wordLimit) && h.wordLimit > 0) wordLimit = h.wordLimit;
-        if (!h.configured) setStatus("The server has no API key set, so rewrites will not work.", true);
-        syncInput();
-        return;
+      if (h.ok && h.configured) {
+        serverReady = true;
+        if (Number.isInteger(h.wordLimit) && h.wordLimit > 0) serverLimit = h.wordLimit;
+        $("engine").hidden = false;
+        moveThumb($("engine"));
       }
     }
   } catch {}
-  mode = "browser";
-  wordLimit = OWN_KEY_WORD_LIMIT;
-  $("keybar").hidden = false;
-  const saved = keyStore.get();
-  if (saved) { $("apikey").value = saved; $("remember").checked = true; }
-  syncInput();
-}
-$("apikey").addEventListener("input", () => { if ($("remember").checked) keyStore.set($("apikey").value.trim()); });
-$("remember").addEventListener("change", () => keyStore.set($("remember").checked ? $("apikey").value.trim() : ""));
-$("forget").addEventListener("click", () => { $("apikey").value = ""; $("remember").checked = false; keyStore.set(""); $("apikey").focus(); });
-
-async function browserClient() {
-  const apiKey = $("apikey").value.trim();
-  if (!apiKey) { $("apikey").focus(); throw fail("Enter your Claude API key above first."); }
-  if (!Anthropic) Anthropic = (await import("./vendor/anthropic.js?v=202611080927")).default;
-  return new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
-}
-const toUserError = (e, signal, partial) => {
-  if (signal.aborted) return new DOMException("Cancelled", "AbortError");
-  const err = fail(describeError(e, Anthropic)[1]); err.partial = partial; return err;
-};
-
-async function browserRewrite(body, signal, onText) {
-  let opts;
-  try { opts = parseOptions(body, { maxWords: wordLimit }); } catch (e) { throw fail(e.message); }
-  const client = await browserClient();
-  let text = "";
-  try {
-    const stream = client.beta.messages.stream(rewriteRequest(opts), { signal });
-    for await (const ev of stream) {
-      if (ev.type === "content_block_delta" && ev.delta.type === "text_delta") { text += ev.delta.text; onText(text); }
-    }
-    return { text, stop: (await stream.finalMessage()).stop_reason };
-  } catch (e) { throw toUserError(e, signal, text); }
-}
-
-async function browserCheck(original, rewrite, signal) {
-  const client = await browserClient();
-  let result;
-  try { result = readCheck(await client.beta.messages.create(checkRequest(original, rewrite), { signal })); }
-  catch (e) { throw toUserError(e, signal); }
-  if (!result) throw fail("The meaning check could not be completed.");
-  return result;
+  setEngine(engine);
 }
 
 async function postJson(url, body, signal) {
@@ -373,16 +366,13 @@ function placeAlt(span) {
   alt.style.top = (below + 220 > sheet.height ? Math.max(12, r.top - sheet.top - 8 - alt.offsetHeight) : below) + "px";
 }
 
-async function fetchAlternatives(body, signal) {
-  if (mode === "server") return (await (await postJson("api/sentence", body, signal)).json()).options;
-  let opts;
-  try { opts = parseSentence(body); } catch (e) { throw fail(e.message); }
-  const client = await browserClient();
-  let result;
-  try { result = readSentence(await client.beta.messages.create(sentenceRequest(opts), { signal })); }
-  catch (e) { throw toUserError(e, signal); }
-  if (!result) throw fail("No alternatives came back. Please try again.");
-  return result;
+async function fetchAlternatives(body, signal, quick) {
+  if (quick) {
+    const options = sentenceOptionsLocal(body.sentence, { tone: body.tone, locked: body.locked });
+    if (!options.length) throw fail("No other wording found for this sentence.");
+    return options;
+  }
+  return (await (await postJson("api/sentence", body, signal)).json()).options;
 }
 
 async function openAlt(span) {
@@ -396,7 +386,7 @@ async function openAlt(span) {
   altCtl = new AbortController();
   const signal = altCtl.signal;
   try {
-    const options = await fetchAlternatives({ sentence, context: v.text, tone: $("tone").value, lang: $("lang").value, locked: lockedTerms() }, signal);
+    const options = await fetchAlternatives({ sentence, context: v.text, tone: $("tone").value, lang: $("lang").value, locked: lockedTerms() }, signal, v.engine === "quick");
     if (signal.aborted) return;
     altBody.replaceChildren(...options.map((o) => {
       const b = document.createElement("button"); b.type = "button"; b.className = "alt-opt"; b.textContent = o;
@@ -417,9 +407,10 @@ async function applyAlt(v, start, end, oldSentence, newSentence) {
   v.text = v.text.slice(0, start) + newSentence + v.text.slice(end);
   state.example = false;
   closeAlt();
+  if (v.engine === "quick") { renderAll(); setStatus("Sentence replaced."); return; }
   v.check = "pending"; renderAll();
   setStatus("Sentence replaced. Checking the meaning again…");
-  try { v.check = await (mode === "server" ? serverCheck : browserCheck)(state.source, v.text, new AbortController().signal); setStatus("Sentence replaced."); }
+  try { v.check = await serverCheck(state.source, v.text, new AbortController().signal); setStatus("Sentence replaced."); }
   catch { v.check = null; setStatus("Sentence replaced. The meaning check could not run."); }
   renderAll();
 }
@@ -442,6 +433,34 @@ function setBusy(b) {
   else goBtn.querySelector(".spin")?.replaceWith(goIcon);
 }
 
+// On a phone the result sits below the input, so bring it into view.
+function showResultOnPhone() {
+  if (matchMedia("(max-width: 760px)").matches) output.closest(".sheet").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+}
+
+// Quick mode: the rules run here, at once, with no network. Each run uses new seeds, so Regenerate gives new wording.
+let quickRuns = 0;
+function runQuick(src, count) {
+  const settings = { engine: "quick", tone: $("tone").value, strength: seg("strength"), locked: lockedTerms() };
+  const base = quickRuns++ * 10;
+  closeAlt();
+  const versions = Array.from({ length: count }, (_, i) => {
+    const r = humanizeLocal(src, { ...settings, seed: base + i + 1 });
+    return { text: r.text, engine: "quick", summary: summarize(r.changes), check: null, status: "done" };
+  });
+  state = { source: src, versions, active: 0, example: false, tab: "result" };
+  renderAll();
+  showResultOnPhone();
+  output.classList.remove("fresh"); void output.offsetWidth; output.classList.add("fresh");
+  setStatus(versions.some((v) => v.text !== src) ? "Done." : "Done. No AI patterns the rules know were found.");
+  againBtn.hidden = false;
+  const before = aiScore(src);
+  renderHistory(addHistory({
+    source: src, settings, aiBefore: before?.score ?? null,
+    versions: versions.map((v) => ({ text: v.text, engine: "quick", summary: v.summary, check: null }))
+  }));
+}
+
 async function run() {
   const src = input.value.trim();
   if (!src) { setStatus("Paste some text first.", true); input.focus(); return; }
@@ -449,18 +468,17 @@ async function run() {
   if (n > wordLimit) { setStatus(`You can rewrite up to ${wordLimit} words at a time. This text has ${n}. Please split it into smaller parts.`, true); return; }
 
   const count = Number(seg("versions"));
-  const settings = { tone: $("tone").value, strength: seg("strength"), lang: $("lang").value, purpose: $("purpose").value, sample: $("sample").value.trim(), locked: lockedTerms() };
+  if (engine === "quick") return runQuick(src, count);
+  const settings = { engine: "ai", tone: $("tone").value, strength: seg("strength"), lang: $("lang").value, purpose: $("purpose").value, sample: $("sample").value.trim(), locked: lockedTerms() };
   ctl = new AbortController();
   const signal = ctl.signal;
   setBusy(true);
   setStatus(count > 1 ? `Writing ${count} versions…` : "Thinking…");
-  state = { source: src, versions: Array.from({ length: count }, () => ({ text: "", check: null, status: "streaming" })), active: 0, example: false, tab: "result" };
+  state = { source: src, versions: Array.from({ length: count }, () => ({ text: "", check: null, engine: "ai", status: "streaming" })), active: 0, example: false, tab: "result" };
   renderAll();
-  // On a phone the result sits below the input, so bring it into view.
-  if (matchMedia("(max-width: 760px)").matches) output.closest(".sheet").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  showResultOnPhone();
 
-  const rewrite = mode === "server" ? serverRewrite : browserRewrite;
-  const check = mode === "server" ? serverCheck : browserCheck;
+  const rewrite = serverRewrite, check = serverCheck;
 
   // If the score is still high, rewrite once more with fixes for what the score found.
   // The retry replaces the first text only when it finished cleanly and scores lower; a stop, error or cut-off keeps the first.
@@ -626,7 +644,10 @@ function restore(h) {
     showModeDesc(); showLockCount();
   }
   setSeg("versions", String(Math.min(3, Math.max(1, h.versions.length))));
-  state = { source: h.source, versions: h.versions.map((v) => ({ ...v, status: "done" })), active: 0, example: false, tab: "result" };
+  // Entries saved before Quick mode existed were AI rewrites.
+  const used = h.settings?.engine || "ai";
+  setEngine(used);
+  state = { source: h.source, versions: h.versions.map((v) => ({ ...v, engine: v.engine || used, status: "done" })), active: 0, example: false, tab: "result" };
   renderAll();
   setStatus(`Opened the rewrite from ${when(h.at)}.`);
   dialog.close();
@@ -658,4 +679,5 @@ requestAnimationFrame(() => requestAnimationFrame(() => segs.forEach((s) => s.cl
 document.fonts?.ready.then(moveThumbs);
 renderAll();
 renderHistory();
-detectMode();
+setEngine("quick");
+detectServer();

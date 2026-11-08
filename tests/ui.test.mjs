@@ -25,9 +25,12 @@ const ndjson = (text) => JSON.stringify({ t: text }) + "\n" + JSON.stringify({ d
 const CHECK = { score: 95, verdict: "Same meaning.", missing: [], added: [] };
 
 // Opens the page; `responses` are rewrite bodies in call order (a function returning null hangs).
-export async function openPage(responses) {
+// engine: "ai" picks the server engine after load (the default for the API tests); "quick" stays in Quick mode.
+// static: true answers /api/health with 404, as GitHub Pages does.
+export async function openPage(responses, { engine = "ai", static: isStatic = false } = {}) {
   const page = await browser.newPage();
   const calls = [];
+  if (isStatic) await page.route("**/api/health", (r) => r.fulfill({ status: 404, body: "Not found" }));
   await page.route("**/api/check", (r) => r.fulfill({ contentType: "application/json", body: JSON.stringify(CHECK) }));
   await page.route("**/api/rewrite", (r) => {
     const body = JSON.parse(r.request().postData());
@@ -38,6 +41,7 @@ export async function openPage(responses) {
     r.fulfill({ contentType: "application/x-ndjson", body: ndjson(text) });
   });
   await page.goto(BASE);
+  if (engine === "ai") { await page.waitForSelector("#engine:not([hidden])"); await page.click('#engine [data-v="ai"]'); }
   return { page, calls };
 }
 
@@ -145,5 +149,68 @@ test("a cut-off retry does not replace a complete first version", { skip }, asyn
   await finished(page);
   assert.equal(calls.length, 2);
   assert.equal(await outputText(page), norm(STOCK_AI_EN));
+  await page.close();
+});
+
+// ---------- Quick mode (local rules) ----------
+test("no API key bar on a static host", { skip }, async () => {
+  const { page } = await openPage([], { engine: "quick", static: true });
+  await page.waitForLoadState("networkidle");
+  assert.equal(await page.$("#keybar"), null);
+  assert.equal(await page.isVisible("#engine"), false);
+  await page.close();
+});
+
+test("quick mode humanizes without any network call", { skip }, async () => {
+  const { page } = await openPage([], { engine: "quick", static: true });
+  await page.waitForLoadState("networkidle");
+  const requests = [];
+  page.on("request", (r) => requests.push(r.url()));
+  await humanize(page);
+  await finished(page);
+  assert.notEqual(await outputText(page), norm(STOCK_AI_EN));
+  const badge = await page.textContent("#out-ai");
+  assert.ok(Number(badge.match(/\d+/)[0]) <= 30, badge);
+  assert.deepEqual(requests, []);
+  assert.match(await page.textContent("#report"), /Changes/);
+  await page.close();
+});
+
+test("three quick versions differ", { skip }, async () => {
+  const { page } = await openPage([], { engine: "quick", static: true });
+  await page.click('#versions [data-v="3"]');
+  await humanize(page);
+  await finished(page);
+  const texts = [];
+  for (const i of [0, 1, 2]) { await page.click(`#vtabs .vtab >> nth=${i}`); texts.push(await outputText(page)); }
+  assert.equal(new Set(texts).size, 3);
+  await page.close();
+});
+
+test("sentence click offers local options", { skip }, async () => {
+  const { page } = await openPage([], { engine: "quick", static: true });
+  await humanize(page, "Moreover, it is crucial to leverage robust tools. " + CASUAL_EN);
+  await finished(page);
+  await page.click("#output .sent >> nth=0");
+  await page.waitForSelector("#alt-body .alt-opt");
+  assert.ok((await page.$$("#alt-body .alt-opt")).length >= 1);
+  await page.close();
+});
+
+test("history saves a quick run", { skip }, async () => {
+  const { page } = await openPage([], { engine: "quick", static: true });
+  await humanize(page);
+  await finished(page);
+  const saved = await page.evaluate(() => Object.entries(localStorage).find(([k]) => /hist/i.test(k))?.[1] || "");
+  assert.match(saved, /"engine":"quick"/);
+  await page.close();
+});
+
+test("with a server the engine choice appears and AI uses the API", { skip }, async () => {
+  const { page, calls } = await openPage([CASUAL_EN], { engine: "ai" });
+  assert.equal(await page.isVisible("#engine"), true);
+  await humanize(page, CASUAL_EN);
+  await finished(page);
+  assert.equal(calls.length, 1);
   await page.close();
 });
