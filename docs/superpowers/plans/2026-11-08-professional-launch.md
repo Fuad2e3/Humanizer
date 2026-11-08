@@ -1,187 +1,121 @@
-# Professional Launch Implementation Plan
+# Professional Launch on Cloudflare with Free AI — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make Humanizer ready to sell: accounts (Google and email link), per-plan word limits enforced on the server, a daily quota that holds across server instances, a manual payment flow with an admin page to approve upgrades, privacy and terms pages, security headers, and the leftover fixes from the quality pass.
+**Goal:** Run Humanizer on Cloudflare with no API key asked from visitors, using free AI (Google Gemini first, Cloudflare Workers AI when Gemini is busy or out of quota), with accounts, per-plan daily limits, manual Pro upgrades, an admin page, legal pages and security headers.
 
-**Architecture:** Supabase provides login and a Postgres database. The server never uses the Supabase SDK: it verifies a visitor's token with `GET /auth/v1/user` and calls the database through PostgREST with `fetch` and the service-role key, so the server keeps one runtime dependency. All Supabase code on the server sits behind one small module (`lib/supabase.js`) that the account logic receives as a parameter, so tests pass a fake. The browser uses `@supabase/supabase-js`, bundled into `public/vendor/` like the Anthropic SDK. When the Supabase variables are not set, the site runs as it does today: no accounts, and the existing in-memory limit.
+**Architecture:** API handlers become Web-standard `(request, env) -> Response` functions in `lib/handlers/`. Cloudflare Pages Functions (`functions/api/*.js`) call them directly; the local Node server (`server.js`) calls them through a small adapter, so local runs and tests use the same code. All AI calls go through `lib/ai.js`, which tries the providers in order (Gemini, then Workers AI) and returns one shape. Prompt text stays in `public/core.js`, now provider-neutral (`{ system, user, maxTokens, schema }`). Accounts and the daily quota use Supabase over `fetch` (`lib/supabase.js`), passed in as a parameter so tests use a fake. The browser no longer talks to any AI provider: the own-key mode, the key bar and the vendored Anthropic SDK are removed.
 
-**Tech Stack:** Node 22 ESM, plain browser JS, Supabase (Auth + Postgres + RLS), `@supabase/supabase-js` (browser only, vendored with esbuild), `node:test`, Playwright.
+**Tech Stack:** Cloudflare Pages + Pages Functions, Workers AI binding (`env.AI`), Gemini REST API (`generativelanguage.googleapis.com`), Supabase (Auth + Postgres + RLS), plain browser JS, `@supabase/supabase-js` (browser only, vendored), `node:test`, Playwright, `wrangler` (dev dependency, for local Pages runs).
 
-**Spec:** Owner decisions in this conversation: payment stays manual for now; login with Google and email link via Supabase; hosting is decided later (the code must work on Vercel and on the local server); site language English only. Product numbers chosen in this plan, owner can change them in one table (`PLANS` in `public/core.js`).
+**Spec:** Owner decisions in this conversation: host on Cloudflare; use free AI, Gemini and Workers AI, no Claude; payment stays manual; login with Google and email link via Supabase; site in English only. Free-tier limits were checked only through third-party pages (about 1,500 Gemini requests per day, 10,000 Workers AI neurons per day) and must be confirmed in the owner's dashboards.
 
 ## Global Constraints
 
-- Plans (in `public/core.js`, `PLANS`):
-  - `guest` (not signed in): 300 words per rewrite, 1,500 words per day, per IP.
-  - `free` (signed in): 500 words per rewrite, 5,000 words per day.
-  - `pro`: 3,000 words per rewrite, 100,000 words per day, $9.99 per 30 days.
-- A day is the UTC calendar day. Usage counts the input words of every `/api/rewrite` call (each version and each automatic retry counts).
-- Pro lasts 30 days from approval (`plan_expires_at`). After that the account is treated as `free` without any job running.
-- Admins are the emails in `ADMIN_EMAILS` (comma-separated, compared lower-case).
-- New server env vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_EMAILS`. The service-role key never reaches the browser. The anon key and URL are public and are sent by `/api/health`.
-- IP addresses are stored only as a SHA-256 hash with a server salt (`USAGE_SALT`, falls back to the service-role key).
-- Owner-specific text (company name, support email, payment instructions) lives only in `public/site-config.js`, with clear placeholders.
-- The GitHub Pages own-key mode keeps working unchanged (no accounts there).
-- After any change in `public/`, run `npm run bump` before committing.
-- Copy: plain English, short sentences, no em-dashes.
+- Providers, in order: `gemini` then `workers-ai`. A provider is skipped when its secret or binding is missing. Fall back to the next one on HTTP 429, 5xx, timeout (25 s) or empty output. A 4xx other than 429 is a bug and is not retried.
+- Model names are env settings, never hard-coded in more than one place: `GEMINI_MODEL` (default `gemini-flash-latest`), `WORKERS_AI_MODEL` (default `@cf/meta/llama-3.1-8b-instruct-fast`). Owner confirms both in their dashboards (SETUP.md says how).
+- Secrets: `GEMINI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `USAGE_SALT`. Plain vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ADMIN_EMAILS`, `GEMINI_MODEL`, `WORKERS_AI_MODEL`. Binding: `AI`.
+- Plans (`PLANS` in `public/core.js`): `guest` 300 words per rewrite, 1,500 per day per IP; `free` 500 and 5,000; `pro` 3,000 and 100,000, $9.99 per 30 days. UTC day. Every AI call that rewrites counts its input words (versions and retries included). Meaning checks and sentence options do not count words but do count toward a per-minute limit.
+- Without Supabase settings the site still runs: guests only, per-IP limits kept in memory (local development).
+- The automatic second try stays, but runs only on `pro` (it doubles calls against the free AI quota).
+- The privacy page must say that text is sent to Google (Gemini) or Cloudflare (Workers AI) to be rewritten, and that Google may use content sent through its free tier to improve its products.
+- Owner-specific text (company, support email, payment details) lives only in `public/site-config.js`.
+- After any change in `public/`, run `npm run bump` before committing. Copy: plain English, no em-dashes.
 
 ## Review Focus
 
-- A request with an expired or forged token: treated as a guest, never as the account it claims. Test in Task 3.
-- Two versions charging the quota at the same moment near the limit: the database function adds atomically, so the total never goes past the limit by more than one call. Test in Task 2 (SQL reviewed) and Task 3 (fake db refuses over-limit).
-- Supabase is down or slow during a rewrite: the visitor gets "Accounts are not available right now. Please try again in a moment." and no rewrite runs unmetered. Test in Task 3.
-- A non-admin calls `/api/admin`: 403, nothing changes. Test in Task 6.
-- A Pro account past `plan_expires_at`: limits fall back to `free`. Test in Task 3.
+- Gemini answers 429 (daily quota used up): the same request is answered by Workers AI and the visitor sees a normal result. Test in Task 2.
+- Both providers fail: the visitor sees "The AI service is busy right now. Please try again in a few minutes." and the words are not charged. Test in Task 2 and Task 4.
+- A model returns JSON wrapped in code fences or with extra text for the meaning check: it is still parsed, and an unparseable answer shows "The meaning check could not be completed." without failing the rewrite. Test in Task 1.
+- A forged or expired login token: treated as a guest. Test in Task 4.
+- A non-admin calls the admin API: 403, nothing changes. Test in Task 7.
 
 ---
 
-### Task 1: Leftover fixes from the quality pass
+### Task 1: Provider-neutral prompts
 
-**Files:** `public/core.js`, `public/files.js`, `public/app.js`, `public/index.html`, tests in `tests/core.test.mjs`, `tests/ui.test.mjs`
-
-- [ ] **Step 1: Write the failing tests:**
-  - `fast-model requests do not ask for a fallback`: `checkRequest("a","b").fallbacks === undefined` and `sentenceRequest(...)` likewise; `rewriteRequest(...)` still has `fallbacks: "default"`.
-  - `the sample is wrapped in tags`: with a sample, `messages[0].content` contains `<style_sample>` and `<text_to_rewrite>`, and the system prompt names those tags.
-  - `the sample counts toward the word limit`: `parseOptions({ text: 400 words, sample: 200 words }, { maxWords: 500 })` throws `InputError`.
-  - `no retry when no signal fired`: `shouldRetry({ score: 50, keys: [] }, 0) === false`.
-  - UI `restoring an old entry with lang "en" keeps "Same as input"`: seed `localStorage` history with `settings.lang: "en"`, restore, assert `#lang` is `same`.
-  - UI `the options chip counts a style sample`: fill `#sample`, assert the chip shows a style marker (`#lock-count` text ends with `+ style`).
-  - UI `a second try is announced`: retry fixture from the quality pass; status contains `Improved on a second try.`
-- [ ] **Step 2: Run** `npm test`. Expected: the new tests FAIL.
-- [ ] **Step 3: Implement.** PDF: wrap the page loop in the same try/catch and `finally { doc?.destroy() }`. Restore maps `lang: "en"` to `same` only for entries that have no `v: 2` marker; new history entries get `v: 2`.
-- [ ] **Step 4: Run** `npm test`. Expected: all PASS.
-- [ ] **Step 5: Commit** (with bump) `"Fix leftovers: fallbacks, sample tags and limit, PDF cleanup, retry notice"`
-
-### Task 2: Database schema
-
-**Files:** Create `supabase/schema.sql`. Test: `tests/schema.test.mjs` (static checks).
-
-Tables (all with RLS on):
-- `profiles(id uuid pk references auth.users on delete cascade, email text, plan text check in ('free','pro') default 'free', plan_expires_at timestamptz, created_at timestamptz default now())`. Trigger `on auth.users insert` creates the row. RLS: a user can `select` their own row; no client writes.
-- `usage(subject text, day date, words int not null default 0, primary key (subject, day))`. No client access.
-- `upgrade_requests(id bigserial pk, user_id uuid references profiles, email text, plan text, method text, reference text, status text check in ('pending','approved','rejected') default 'pending', created_at timestamptz default now(), decided_at timestamptz, decided_by text)`. RLS: a user can `select` their own rows; no client writes.
-- Function `add_usage(p_subject text, p_words int, p_limit int) returns table(ok boolean, used int)`, `security definer`, executable only by `service_role`: inserts or updates the `(subject, current_date at UTC)` row with `words = words + p_words` only when the result stays `<= p_limit`, in one statement (`insert ... on conflict do update ... where usage.words + excluded.words <= p_limit returning`), and returns `ok=false` with the current total otherwise.
-
-- [ ] **Step 1: Write the failing test** `tests/schema.test.mjs`: reads the file and asserts it contains, for each table, `enable row level security`; `security definer` and `revoke execute on function add_usage` from `public, anon, authenticated`; the `on conflict` update with the `<= p_limit` guard.
-- [ ] **Step 2: Run** `npm test`. Expected: FAIL (file missing).
-- [ ] **Step 3: Write** `supabase/schema.sql`. If `psql` or a local Postgres is available, load it once and call `add_usage` twice past the limit to see `ok=false`; otherwise record that it was not run.
-- [ ] **Step 4: Run** `npm test`. Expected: PASS.
-- [ ] **Step 5: Commit** `"Add the Supabase schema: profiles, usage, upgrade requests"`
-
-### Task 3: Server accounts and the daily quota
-
-**Files:** Create `lib/supabase.js`, `lib/account.js`. Modify `public/core.js` (`PLANS`), `api/rewrite.js`, `api/health.js`, `lib/humanize.js` (remove `WORD_LIMIT` use from rewrite). Create `api/me.js`; register in `server.js`. Test: `tests/account.test.mjs`.
+**Files:** `public/core.js`, `tests/core.test.mjs`
 
 **Interfaces:**
-- `public/core.js`: `export const PLANS = { guest: { perRewrite: 300, perDay: 1500 }, free: { perRewrite: 500, perDay: 5000 }, pro: { perRewrite: 3000, perDay: 100000, price: 9.99, days: 30 } }`.
-- `lib/supabase.js`: `export function createSupabase(env = process.env, fetchFn = fetch) -> null | { getUser(token) -> Promise<{ id, email } | null>, getProfile(id) -> Promise<{ plan, plan_expires_at } | null>, addUsage(subject, words, limit) -> Promise<{ ok, used }>, insert(table, row), select(table, query), update(table, query, patch) }`. Returns `null` when `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` is missing. Every call has a 5 s timeout; network or 5xx errors throw `AccountsDownError`.
-- `lib/account.js`:
-  - `export async function resolveAccount(req, db) -> { kind: "guest" | "user", user: { id, email } | null, plan: "guest" | "free" | "pro", subject: string }`. Reads `Authorization: Bearer <token>`. Invalid token → guest. `pro` with `plan_expires_at` in the past → `free`. Guest subject is `ip:` + SHA-256 of salt + IP.
-  - `export async function charge(account, words, db) -> { ok, used, limit }` using `PLANS[plan].perDay`.
-  - `export const LIMIT_MESSAGES = { perRewrite(plan, n), perDay(plan) }`: guest and free messages point to signing in or Pro; the Pro message says the daily limit resets at midnight UTC.
-- `api/rewrite.js`: when `db` exists: resolve the account, `parseOptions(body, { maxWords: PLANS[plan].perRewrite })`, then `charge`; on `ok: false` answer 429 `{ error, limit: "day", plan }`. When `db` is null: today's behavior.
-- `api/health.js`: adds `auth: { url, anonKey } | null` and `plans: PLANS`.
-- `api/me.js`: GET → `{ email, plan, planExpires, usedToday, perDay, perRewrite, isAdmin }`, 401 for guests.
+- Produces: `rewritePrompt(opts) -> { system, user, maxTokens: 8000 }`, `checkPrompt(original, rewrite) -> { system, user, maxTokens: 2000, schema: CHECK_SCHEMA }`, `sentencePrompt(opts) -> { system, user, maxTokens: 1500, schema: SENTENCE_SCHEMA }`, `parseJsonReply(text) -> object | null` (strips ```json fences and text around the outermost `{...}`), `readCheck(text)`, `readSentence(text)` now take the reply text. Removed: `rewriteRequest`, `checkRequest`, `sentenceRequest`, `FALLBACK`, `MODEL_DEFAULT`, `MODEL_FAST`, `OWN_KEY_WORD_LIMIT`, `describeError`'s Anthropic branch.
+- Leftovers folded in: sample wrapped in `<style_sample>` / `<text_to_rewrite>` tags and counted toward the word limit; `shouldRetry` false when `keys` is empty.
 
-- [ ] **Step 1: Write the failing tests** in `tests/account.test.mjs` with a fake `db` object (in-memory maps, no network):
-  - `no token is a guest with a hashed IP subject`: subject starts with `ip:` and does not contain the raw IP.
-  - `a token the db rejects is a guest`.
-  - `a valid token gets the profile plan`: plan `pro`, future expiry → `pro`.
-  - `an expired pro falls back to free`.
-  - `charge refuses past the daily limit`: free user, charge 4,800 then 300 → second `{ ok: false }`.
-  - `accounts down raises a clear error`: fake `getUser` throws `AccountsDownError` → `resolveAccount` rejects with message `"Accounts are not available right now. Please try again in a moment."`
-  - `createSupabase returns null without env`.
-  - `createSupabase sends the service key and times out`: fake `fetchFn` records headers; a never-resolving fetch rejects with `AccountsDownError` after the timeout (test passes `timeoutMs: 50`).
+- [ ] **Step 1: Write the failing tests:** each prompt builder's shape; `parseJsonReply('```json\n{"score":90}\n```')` → `{ score: 90 }`; `parseJsonReply('Sure! {"options":["a"]} Hope this helps')` → `{ options: ["a"] }`; `parseJsonReply("nope")` → `null`; `readCheck` clamps score to 0-100 and returns `null` for unparseable text; sample tags and word-limit tests; `shouldRetry({ score: 50, keys: [] }, 0) === false`. Replace the old `*Request` tests.
 - [ ] **Step 2: Run** `npm test`. Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** `npm test`. Expected: all PASS, including the quality-pass UI tests (no Supabase env, so behavior is unchanged).
-- [ ] **Step 5: Commit** `"Enforce per-plan word limits and a daily quota on the server"`
+- [ ] **Step 3: Implement.** Keep `parseOptions`, `parseSentence`, `FEEDBACK`, `PURPOSES`, `TONES`, `LANGS`. JSON prompts end with "Reply with only a JSON object matching this schema: <schema JSON>" so models without structured output still comply.
+- [ ] **Step 4: Run** `npm test`. Expected: core tests PASS (UI tests may fail until Task 3; note it).
+- [ ] **Step 5: Commit** `"Make prompts provider-neutral and parse JSON replies leniently"`
 
-### Task 4: Sign-in in the page
+### Task 2: AI providers with fallback
 
-**Files:** `package.json` (`@supabase/supabase-js` devDependency, exact version; `build:vendor` also bundles `scripts/supabase-entry.mjs` to `public/vendor/supabase.js`), create `public/auth.js`, modify `public/index.html` (Sign in button in the nav, a sign-in `<dialog id="signin">` with "Continue with Google" and an email field, an account menu showing plan and "words left today"), `public/app.js` (send `Authorization` on every `/api/*` call; show the 429 day-limit message with a link to Pricing), `public/styles.css`. Test: `tests/ui.test.mjs`.
+**Files:** create `lib/ai.js`, `lib/providers/gemini.js`, `lib/providers/workers-ai.js`, `tests/ai.test.mjs`
 
 **Interfaces:**
-- `public/auth.js`: `initAuth({ url, anonKey }) -> Promise<void>`, `signInWithGoogle()`, `signInWithEmail(email) -> Promise<void>` (magic link, `emailRedirectTo` = current page), `signOut()`, `getToken() -> Promise<string | null>`, `onAuthChange(cb)`. All are no-ops when `initAuth` was not called (no `auth` in health).
+- `gemini.js`: `export function geminiProvider(env, fetchFn = fetch) -> null | { name: "gemini", generate({ system, user, maxTokens, schema }, { onText, signal }) -> Promise<{ text, stop: "end" | "length" }> }`. Uses `POST https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse` when `onText` is given, else `:generateContent`; key in the `x-goog-api-key` header; `systemInstruction`, `generationConfig.maxOutputTokens`, and for a schema `responseMimeType: "application/json"`. Maps `finishReason: "MAX_TOKENS"` to `stop: "length"`.
+- `workers-ai.js`: `export function workersAiProvider(env) -> null | { name: "workers-ai", generate(...) }`. Calls `env.AI.run(WORKERS_AI_MODEL, { messages: [{ role: "system", ... }, { role: "user", ... }], max_tokens, stream: Boolean(onText) })`; reads the SSE stream (`data: {"response": "..."}` lines, `[DONE]`).
+- `ai.js`: `export class AIBusyError extends Error` with message "The AI service is busy right now. Please try again in a few minutes."; `export function providers(env, fetchFn) -> provider[]`; `export async function generate(prompt, { env, fetchFn, onText, signal, timeoutMs = 25000 }) -> { text, stop, provider }`. Fallback happens only before the first streamed character; once text has streamed, an error ends the stream with the partial text and `stop: "error"`.
 
-- [ ] **Step 1: Write the failing UI tests** (mock `/api/health` with `auth: null` and with `auth: { url, anonKey }` pointing at a mocked origin; mock `/api/me`):
-  - `no auth config hides the sign-in button`.
-  - `with auth config the sign-in button opens the dialog`.
-  - `a day-limit 429 shows the upgrade message`: rewrite returns 429 `{ error: "...", limit: "day" }`; status shows the message and a link to `pricing.html`.
-  - `a signed-in session sends the token`: put a Supabase session in `localStorage` under the key supabase-js uses, assert the rewrite request has `Authorization: Bearer <token>` and the account menu shows the plan from `/api/me`.
+- [ ] **Step 1: Write the failing tests** with a fake `fetchFn` and a fake `env.AI`: Gemini success (streamed chunks joined, `onText` called in order); Gemini 429 → Workers AI answers, `provider === "workers-ai"`; both fail → `AIBusyError`; Gemini 400 → error thrown, Workers AI not called; no `GEMINI_API_KEY` → only Workers AI used; timeout → next provider; error after first chunk → partial text, `stop: "error"`, no fallback; the API key is sent in a header, never in the URL.
 - [ ] **Step 2: Run** `npm test`. Expected: FAIL.
 - [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** `npm test`. Expected: all PASS.
-- [ ] **Step 5: Commit** (with bump) `"Add sign-in with Google or an email link"`
+- [ ] **Step 4: Run** `npm test`. Expected: AI tests PASS.
+- [ ] **Step 5: Commit** `"Add Gemini and Workers AI providers with fallback"`
 
-### Task 5: Manual upgrade requests
+### Task 3: Web-standard handlers, Cloudflare functions and the local server
 
-**Files:** create `public/site-config.js`, `api/upgrade.js` (register in `server.js`), modify `public/pricing.html` (Pro button "Upgrade to Pro"; Team becomes "Contact us" with `mailto:` support email), create `public/pricing.js`. Test: `tests/account.test.mjs`, `tests/ui.test.mjs`.
+**Files:** create `lib/handlers/{rewrite,check,sentence,health,me}.js` (only `rewrite`, `check`, `sentence`, `health` in this task), `lib/http.js` (`json(status, body)`, `ndjsonStream()`), `functions/api/[[route]].js`, `wrangler.toml`; rewrite `server.js` to adapt Node req/res to `Request`/`Response`; delete `api/*.js`, `lib/humanize.js`, `vercel.json`, `public/vendor/anthropic.js`, `scripts/sdk-entry.mjs`, `@anthropic-ai/sdk`; remove the key bar and own-key code from `public/index.html` and `public/app.js`. Tests: `tests/handlers.test.mjs`, existing `tests/ui.test.mjs`.
 
 **Interfaces:**
-- `public/site-config.js`: `export const SITE = { name: "Humanizer", company: "YOUR COMPANY NAME", supportEmail: "support@example.com", payment: { methods: [{ id: "bkash", label: "bKash", details: "Send to 01XXXXXXXXX (Personal), reference: your email" }, { id: "bank", label: "Bank transfer", details: "Account details here" }] } }`.
-- `api/upgrade.js`: POST `{ method, reference }` (method one of the configured ids or `other`, reference 3–100 chars) → inserts a `pending` row for the signed-in user; guests get 401; a user with a pending request gets 409 "You already have a request waiting for review."; returns `{ ok: true }`.
-- `lib/account.js` gains `export async function requestUpgrade(account, body, db)` holding that logic, so it is tested without HTTP.
+- Each handler: `export default async function (request, env, ctx) -> Response`, where `ctx` = `{ ai: { generate }, db: supabase | null, ip: string }` built by the router, so tests inject fakes.
+- `functions/api/[[route]].js`: `onRequest({ request, env, params })` picks the handler by path, builds `ctx` with the real `generate`, `createSupabase(env)` and the `CF-Connecting-IP` header.
+- `server.js`: same router for local runs; reads `.env`; `env.AI` is absent locally unless `wrangler pages dev` is used (README explains).
+- `rewrite` streams NDJSON as today: `{"t": "..."}` lines, then `{"done": true, "stop": "end" | "length" | "error", "provider": "..."}`. `app.js` keeps the retry only when `stop === "end"`.
+- `health` returns `{ ok: true, providers: ["gemini", "workers-ai"], auth: {...} | null, plans: PLANS }`.
 
-- [ ] **Step 1: Write the failing tests:** `requestUpgrade` guest → 401 error; bad reference → 400; second pending → 409; valid → row inserted with `status: "pending"`. UI: on Pricing, a signed-out click asks to sign in; a signed-in click shows the payment details from `SITE` and a reference field, and submitting shows "Thanks. We will upgrade your account after we confirm the payment, usually within 24 hours."
+- [ ] **Step 1: Write the failing tests** in `tests/handlers.test.mjs`: call each handler with a `Request` and a fake `ctx`; rewrite streams the fake provider's text; check returns the parsed JSON; a fence-wrapped check reply still parses; an unparseable check reply → 422 with "The meaning check could not be completed."; `AIBusyError` → 503 with its message; non-POST → 405; over the guest word limit → 400.
+- [ ] **Step 2: Run** `npm test`. Expected: FAIL.
+- [ ] **Step 3: Implement.** Update `tests/ui.test.mjs` so its mocks match the new done line, and drop UI tests of the own-key mode. Run `npx wrangler pages dev public --compatibility-date=2026-10-01` once if wrangler can start offline; record the result either way.
+- [ ] **Step 4: Run** `npm test`. Expected: all PASS.
+- [ ] **Step 5: Commit** (with bump) `"Move the API to Cloudflare Pages Functions with free AI; drop the API key bar"`
+
+### Task 4: Accounts and the daily quota
+
+As Tasks 2 and 3 of the earlier launch plan (`git show ed90c75:docs/superpowers/plans/2026-11-08-professional-launch.md`), adapted: `supabase/schema.sql` (profiles, usage with atomic `add_usage`, upgrade_requests, RLS on all), `lib/supabase.js` (`createSupabase(env, fetchFn)`), `lib/account.js` (`resolveAccount(request, ctx)`, `charge(account, words, db)`), `lib/handlers/me.js`. In `rewrite`, charge only after the provider returns its first character (so `AIBusyError` charges nothing), and pass `retryAllowed: plan === "pro"` in the `done` line.
+
+- [ ] **Step 1: Write the failing tests:** no token → guest with hashed IP subject; rejected token → guest; expired Pro → free; charge refuses past the daily limit; Supabase down → "Accounts are not available right now. Please try again in a moment."; `AIBusyError` → no charge; schema file has RLS on every table and the `<= p_limit` guard.
 - [ ] **Step 2: Run** `npm test`. Expected: FAIL.
 - [ ] **Step 3: Implement.**
 - [ ] **Step 4: Run** `npm test`. Expected: all PASS.
-- [ ] **Step 5: Commit** (with bump) `"Add manual upgrade requests from the Pricing page"`
+- [ ] **Step 5: Commit** `"Add accounts and per-plan daily limits"`
 
-### Task 6: Admin page
+### Task 5: Sign-in in the page
 
-**Files:** create `api/admin.js` (register in `server.js`), `public/admin.html`, `public/admin.js`; `robots.txt` disallows `admin.html`. Test: `tests/account.test.mjs`, `tests/ui.test.mjs`.
+As Task 4 of the earlier launch plan (same commit): vendored `@supabase/supabase-js`, `public/auth.js`, Sign in dialog (Google, email link), account menu with plan and words left, `Authorization` header on every API call, day-limit message linking to Pricing, retry only when the `done` line says `retryAllowed`.
 
-**Interfaces:**
-- `lib/account.js`: `export function isAdmin(account, env = process.env) -> boolean`; `export async function listRequests(db, status = "pending")`; `export async function decide(account, { id, action }, db)`: `approve` sets the profile to `pro` with `plan_expires_at` = later of now or the current expiry, plus 30 days (so renewals stack), and marks the request `approved` with `decided_by`; `reject` marks it `rejected`.
-- `api/admin.js`: GET → `{ requests }`; POST `{ id, action }` → `{ ok: true }`; non-admins get 403.
+- [ ] Steps 1-5 as in that task, with these UI tests: no auth config hides Sign in; the dialog opens; a signed-in session sends the token and shows the plan; a day-limit 429 shows the upgrade link; a guest run makes no second try even with a high score.
 
-- [ ] **Step 1: Write the failing tests:** non-admin → 403 and the fake db is unchanged; approve on a user with 10 days of Pro left → expiry is 40 days out; approve on a free user → 30 days; reject leaves the plan alone. UI: admin page lists a mocked request and clicking Approve sends `{ id, action: "approve" }`.
-- [ ] **Step 2: Run** `npm test`. Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** `npm test`. Expected: all PASS.
-- [ ] **Step 5: Commit** (with bump) `"Add an admin page to approve upgrades"`
+### Task 6: Manual upgrade requests
 
-### Task 7: Privacy, terms and footer
+As Task 5 of the earlier launch plan (same commit) (`public/site-config.js`, `lib/handlers/upgrade.js`, Pricing page form, "Contact us" for Team). Pricing copy for Pro: "3,000 words per rewrite, 100,000 words a day, automatic second try".
 
-**Files:** create `public/privacy.html`, `public/terms.html` (built from `SITE` placeholders, plain English, clearly marked "Template, have it checked before launch" in an HTML comment and in README); add a footer with Features, Pricing, FAQ, Privacy, Terms and the support email to every page; add both pages to `sitemap.xml`. Test: `tests/ui.test.mjs`.
+### Task 7: Admin page
 
-Privacy page must state: what is collected (email, plan, daily word counts, hashed IP for guests, upgrade references); that text is sent to Anthropic to be rewritten and is not stored on our server; local browser history; how to delete an account (email support). Terms must cover: acceptable use (no academic dishonesty claims, follow your institution's rules), no guarantee of passing AI detectors, manual payments and refunds by email within 7 days if no Pro usage, limits may change.
+As Task 6 of the earlier launch plan (same commit) (`lib/handlers/admin.js`, `public/admin.html`, approve adds 30 days to the later of now and the current expiry).
 
-- [ ] **Step 1: Write the failing UI test:** every page in `public/*.html` has a footer link to `privacy.html` and `terms.html`, and both pages load with no console errors.
-- [ ] **Step 2: Run** `npm test`. Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** `npm test`. Expected: PASS.
-- [ ] **Step 5: Commit** (with bump) `"Add privacy and terms pages and a site footer"`
+### Task 8: Privacy, terms, footer and security headers
 
-### Task 8: Security headers
+As Tasks 7 and 8 of the earlier launch plan (same commit), with headers in `public/_headers` (Cloudflare Pages format) and in `server.js`. `connect-src` is `'self' https://*.supabase.co` only, since the browser no longer calls any AI provider. Privacy text includes the Gemini and Workers AI wording from Global Constraints.
 
-**Files:** `vercel.json` (`headers`), `server.js` (same headers on every response). Test: `tests/ui.test.mjs` (fetch against the local server).
+### Task 9: Leftover fixes and the setup guide
 
-Headers: `Content-Security-Policy` allowing self, `https://api.anthropic.com` and the Supabase URL for `connect-src`, `https://accounts.google.com` not needed (redirect flow), `img-src 'self' data:`, `frame-ancestors 'none'`, `worker-src 'self' blob:`; `X-Content-Type-Options: nosniff`; `Referrer-Policy: strict-origin-when-cross-origin`; `Permissions-Policy: camera=(), microphone=(), geolocation=()`. Because the Supabase URL is per deployment, `connect-src` uses `https://*.supabase.co`.
+Remaining leftovers (PDF.js cleanup and errors, history `lang` restore, style chip marker, "Improved on a second try." notice), then `docs/SETUP.md`: create the Cloudflare Pages project from GitHub (build command none, output `public`, functions folder auto-detected); add the Workers AI binding `AI`; create a Gemini key in Google AI Studio and check the free limits for the chosen model there; Supabase project, schema, Google and email login, redirect URLs; every secret and var; fill `site-config.js`; how to approve a payment. README: remove the GitHub Pages and Vercel sections; `index.html` at the repo root keeps sending GitHub Pages visitors to `public/`, where a banner points them to the new address once the owner fills `SITE.url`.
 
-- [ ] **Step 1: Write the failing test:** `GET /` from the local server has the four headers, and the existing UI tests still pass with the CSP on (no CSP violations reported in the console).
-- [ ] **Step 2: Run** `npm test`. Expected: FAIL.
-- [ ] **Step 3: Implement.** Move any inline `<script>` that the CSP blocks into a file; JSON-LD `<script type="application/ld+json">` is allowed (not executed).
-- [ ] **Step 4: Run** `npm test`. Expected: all PASS.
-- [ ] **Step 5: Commit** (with bump) `"Send security headers"`
-
-### Task 9: Setup guide
-
-**Files:** create `docs/SETUP.md`; update `README.md` (plans table, env table, links to SETUP.md, `.env.example` gains the new variables).
-
-SETUP.md steps: create a Supabase project; run `supabase/schema.sql` in the SQL editor; turn on Google (with the Google Cloud OAuth client steps) and email providers; set Site URL and redirect URLs; copy URL, anon key and service-role key into Vercel env; set `ADMIN_EMAILS` and `USAGE_SALT`; fill `public/site-config.js`; have the privacy and terms pages checked; how to approve a payment from `/admin.html`.
-
-- [ ] **Step 1:** Write the docs.
-- [ ] **Step 2: Run** `npm test` and the local server with no Supabase env; load every page in Playwright at 390 px and 1280 px; expected: no console errors and no horizontal scroll.
-- [ ] **Step 3: Commit** `"Add the setup guide for accounts and payments"`
+- [ ] Final check: `npm test`; every page at 390 px and 1280 px with no console errors and no sideways scroll; one full rewrite through the local server with fake providers.
 
 ---
 
 ## Out of scope
 
-- Automatic payments (Paddle, bKash API): the owner chose manual for now. `upgrade_requests` and `decide` are where an automatic provider would plug in later.
-- Hosting and domain: decided later; the canonical URLs in `public/*.html` stay as they are.
+- Claude, paid AI tiers and automatic payments (owner chose free AI and manual payment for now). `lib/ai.js` is where a paid provider would be added later.
+- Custom domain (owner adds it in Cloudflare later; canonical URLs are updated then).
 - History synced across devices, team accounts, outside AI detectors, analytics.
