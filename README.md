@@ -12,13 +12,15 @@ Rewrites AI-generated text so it reads like a person wrote it, while keeping its
 | Word limit | 500 words per rewrite on the free tier (set with `FREE_WORD_LIMIT`). 3,000 words when visitors use their own key on GitHub Pages |
 | File upload | .txt, .md and Word (.docx) files, by button or drag and drop. Files are read in the browser |
 | History | The last 30 rewrites are saved in the browser and can be reopened, copied or deleted |
+| Sentence rewrite | Click any sentence in the result to get three new wordings that fit the paragraph; picking one re-runs the meaning check |
 | Meaning check | Claude compares the rewrite with the original, gives a 0-100 score and lists anything lost or added |
 | Number and word lock | Checks that every number and locked word is still there, marked ✓ or ✗ |
-| Pricing section | Free, Pro and Team plans |
+| SEO pages | Features, Pricing and FAQ pages with meta tags, a share image, structured data, `robots.txt` and `sitemap.xml` |
 
 ### Before launch
 
-- **Pricing:** Pro and Team show a "Coming soon" button. Payments and user accounts are not built yet, so the Pro 3,000-word limit does not apply to anyone yet. Prices are in Bangladeshi taka (৳); change them in `public/index.html`.
+- **Pricing:** Pro and Team show a "Coming soon" button. Payments and user accounts are not built yet, so the Pro 3,000-word limit does not apply to anyone yet. Prices are in US dollars; change them in `public/pricing.html`.
+- **Your own domain:** the canonical links, share tags, `robots.txt` and `sitemap.xml` point to `https://fuad2e3.github.io/Humanizer/public/`. When you move to your own domain, replace that address in `public/*.html`, `public/robots.txt` and `public/sitemap.xml`.
 
 ## Where to run it
 
@@ -58,13 +60,15 @@ The page detects which setup it is running in. With a server it uses the server;
 |---|---|---|
 | `ANTHROPIC_API_KEY` | (required) | Claude API key |
 | `CLAUDE_MODEL` | `claude-opus-5-5` | Model used for rewrites and meaning checks |
-| `RATE_LIMIT_PER_MIN` | `30` | Requests allowed per IP per minute (3 versions = 6 requests) |
+| `RATE_LIMIT_PER_MIN` | `30` | Requests allowed per IP per minute (3 versions = 6 requests; each sentence rewrite = 2) |
 | `FREE_WORD_LIMIT` | `500` | Maximum words per rewrite |
 | `PORT` | `3000` | Port for the local server |
 
 ## Files
 
-- `public/index.html`: the page
+- `public/index.html`: the tool
+- `public/features.html`, `public/pricing.html`, `public/faq.html`: content pages
+- `public/og.png`, `public/robots.txt`, `public/sitemap.xml`: sharing and search
 - `public/app.js`: main page logic
 - `public/styles.css`: styles
 - `public/core.js`: prompts and options, shared by the server and the browser
@@ -75,6 +79,7 @@ The page detects which setup it is running in. With a server it uses the server;
 - `public/vendor/anthropic.js`: Claude SDK bundled for the browser (`npm run build:vendor`)
 - `api/rewrite.js`: streams a rewrite
 - `api/check.js`: runs the meaning check
+- `api/sentence.js`: three alternatives for one sentence
 - `api/health.js`: tells the page that a server is present
 - `lib/humanize.js`: Claude API calls on the server
 - `server.js`: local server

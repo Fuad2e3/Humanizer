@@ -1,5 +1,5 @@
-import { parseOptions, rewriteRequest, checkRequest, readCheck, describeError, FREE_WORD_LIMIT, OWN_KEY_WORD_LIMIT } from "./core.js";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML } from "./text.js";
+import { parseOptions, rewriteRequest, checkRequest, readCheck, parseSentence, sentenceRequest, readSentence, describeError, FREE_WORD_LIMIT, OWN_KEY_WORD_LIMIT } from "./core.js";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js";
 import { aiScore, MIN_WORDS } from "./detect.js";
 import { readTextFile, ACCEPT } from "./files.js";
 import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js";
@@ -130,7 +130,8 @@ function renderOutput() {
   output.classList.toggle("placeholder", !has);
   if (!has) output.textContent = v.status === "err" ? (v.error || "This version could not be created.") : v.status === "streaming" ? "" : "Paste your text, then press “Humanize”.";
   else if (state.tab === "diff") output.innerHTML = diffHTML(state.source, v.text);
-  else output.innerHTML = markAI(v.text);
+  else if (v.status === "streaming" || goBtn.disabled) output.innerHTML = markAI(v.text);
+  else output.innerHTML = clickableSentences(v.text);
   output.classList.toggle("streaming", v.status === "streaming");
   $("out-count").textContent = has ? `${words(v.text)} words · ${sentences(v.text).length} sentences` : "";
   $("tab-result").setAttribute("aria-selected", String(state.tab === "result"));
@@ -139,6 +140,8 @@ function renderOutput() {
   $("use-version").hidden = !has || state.example || v.status === "streaming";
   setBadge($("out-ai"), has && v.status !== "streaming" ? aiScore(v.text) : null);
   $("copy").classList.toggle("accent", has && !state.example && v.status !== "streaming");
+  $("sent-hint").hidden = !has || state.tab !== "result" || v.status === "streaming";
+  closeAlt();
   $("report-for").textContent = state.versions.length > 1 ? `for Version ${state.active + 1}` : "";
 }
 $("tab-result").addEventListener("click", () => { state.tab = "result"; renderOutput(); });
@@ -337,6 +340,93 @@ async function serverRewrite(body, signal, onText) {
 }
 
 const serverCheck = async (original, rewrite, signal) => (await postJson("api/check", { original, rewrite }, signal)).json();
+
+// ---------- Sentence alternatives ----------
+// The result is drawn as clickable sentences; picking one asks Claude for three new wordings.
+function clickableSentences(text) {
+  let out = "", last = 0;
+  for (const r of sentenceRanges(text)) {
+    out += html(text.slice(last, r.start)) + `<span class="sent" role="button" tabindex="0" data-s="${r.start}" data-e="${r.end}">${markAI(text.slice(r.start, r.end))}</span>`;
+    last = r.end;
+  }
+  return out + html(text.slice(last));
+}
+
+const alt = $("alt"), altBody = $("alt-body");
+let altCtl = null, altSpan = null;
+
+function closeAlt() {
+  altCtl?.abort(); altCtl = null;
+  altSpan?.classList.remove("active"); altSpan = null;
+  alt.hidden = true;
+}
+
+function placeAlt(span) {
+  const sheet = alt.parentElement.getBoundingClientRect(), r = span.getBoundingClientRect();
+  const width = Math.min(420, sheet.width - 24);
+  alt.style.width = width + "px";
+  alt.style.left = Math.max(12, Math.min(r.left - sheet.left, sheet.width - width - 12)) + "px";
+  const below = r.bottom - sheet.top + 8;
+  alt.style.top = (below + 220 > sheet.height ? Math.max(12, r.top - sheet.top - 8 - alt.offsetHeight) : below) + "px";
+}
+
+async function fetchAlternatives(body, signal) {
+  if (mode === "server") return (await (await postJson("api/sentence", body, signal)).json()).options;
+  let opts;
+  try { opts = parseSentence(body); } catch (e) { throw fail(e.message); }
+  const client = await browserClient();
+  let result;
+  try { result = readSentence(await client.beta.messages.create(sentenceRequest(opts), { signal })); }
+  catch (e) { throw toUserError(e, signal); }
+  if (!result) throw fail("No alternatives came back. Please try again.");
+  return result;
+}
+
+async function openAlt(span) {
+  const v = cur();
+  if (goBtn.disabled || !v.text) return;
+  closeAlt();
+  altSpan = span; span.classList.add("active");
+  const start = Number(span.dataset.s), end = Number(span.dataset.e), sentence = v.text.slice(start, end);
+  altBody.innerHTML = '<p class="alt-wait"><i class="spin"></i>Finding new wordings…</p>';
+  alt.hidden = false; placeAlt(span);
+  altCtl = new AbortController();
+  const signal = altCtl.signal;
+  try {
+    const options = await fetchAlternatives({ sentence, context: v.text, tone: $("tone").value, locked: lockedTerms() }, signal);
+    if (signal.aborted) return;
+    altBody.replaceChildren(...options.map((o) => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "alt-opt"; b.textContent = o;
+      b.addEventListener("click", () => applyAlt(v, start, end, sentence, o));
+      return b;
+    }));
+    placeAlt(span);
+    altBody.querySelector("button")?.focus();
+  } catch (e) {
+    if (signal.aborted || e.name === "AbortError") return;
+    const p = document.createElement("p"); p.className = "alt-err"; p.textContent = e.userMessage || "Something went wrong. Please try again.";
+    altBody.replaceChildren(p);
+  }
+}
+
+async function applyAlt(v, start, end, oldSentence, newSentence) {
+  if (v.text.slice(start, end) !== oldSentence) { closeAlt(); return; }
+  v.text = v.text.slice(0, start) + newSentence + v.text.slice(end);
+  state.example = false;
+  closeAlt();
+  v.check = "pending"; renderAll();
+  setStatus("Sentence replaced. Checking the meaning again…");
+  try { v.check = await (mode === "server" ? serverCheck : browserCheck)(state.source, v.text, new AbortController().signal); setStatus("Sentence replaced."); }
+  catch { v.check = null; setStatus("Sentence replaced. The meaning check could not run."); }
+  renderAll();
+}
+
+output.addEventListener("click", (e) => { const s = e.target.closest(".sent"); if (s) openAlt(s); });
+output.addEventListener("keydown", (e) => { const s = e.target.closest(".sent"); if (s && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openAlt(s); } });
+output.addEventListener("scroll", closeAlt);
+$("alt-close").addEventListener("click", closeAlt);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !alt.hidden) closeAlt(); });
+document.addEventListener("pointerdown", (e) => { if (!alt.hidden && !alt.contains(e.target) && !e.target.closest(".sent")) closeAlt(); });
 
 // ---------- Run ----------
 let ctl = null;
