@@ -1,10 +1,10 @@
-import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611080937";
-import { humanizeLocal, sentenceOptionsLocal } from "./rules.js?v=202611080937";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080937";
-import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611080937";
-import { readTextFile, ACCEPT } from "./files.js?v=202611080937";
-import { makeDocx } from "./docx-export.js?v=202611080937";
-import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080937";
+import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611080954";
+import { humanizeLocal, sentenceOptionsLocal } from "./rules.js?v=202611080954";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080954";
+import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611080954";
+import { readTextFile, ACCEPT } from "./files.js?v=202611080954";
+import { makeDocx } from "./docx-export.js?v=202611080954";
+import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080954";
 
 const $ = (id) => document.getElementById(id);
 const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
@@ -58,14 +58,23 @@ const setSeg = (id, v) => { $(id).querySelectorAll("button[data-v]").forEach((x)
 ["strength", "versions"].forEach((id) => $(id).addEventListener("click", (e) => {
   const b = e.target.closest("button[data-v]"); if (b) setSeg(id, b.dataset.v);
 }));
+// What each mode does differs by engine; the buttons' tooltips and the screen-reader text follow the engine.
+const MODE_DESC = {
+  quick: { light: "Swaps stock phrases and stiff words", medium: "Also drops filler openers and adds contractions", strong: "Also varies sentence length" },
+  ai: { light: "Fixes only the robotic parts", medium: "Rewrites sentences, keeps the structure", strong: "Restructures everything, same meaning" }
+};
 // Quick keeps the input language and has no style or purpose options, so those controls show only for AI.
 function setEngine(e) {
   engine = e === "ai" && serverReady ? "ai" : "quick";
   setSeg("engine", engine);
   wordLimit = engine === "ai" ? serverLimit : QUICK_WORD_LIMIT;
   document.querySelectorAll(".ai-only").forEach((el) => { el.hidden = engine !== "ai"; });
+  $("strength").querySelectorAll("button[data-v]").forEach((b) => { b.dataset.desc = b.title = MODE_DESC[engine][b.dataset.v]; });
+  showModeDesc();
   syncInput();
 }
+// Without a server every version is handled locally, including AI rewrites reopened from history.
+const usesQuick = (v) => v.engine === "quick" || !serverReady;
 $("engine").addEventListener("click", (e) => { const b = e.target.closest("button[data-v]"); if (b) setEngine(b.dataset.v); });
 // ---------- Motion helpers ----------
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -386,7 +395,7 @@ async function openAlt(span) {
   altCtl = new AbortController();
   const signal = altCtl.signal;
   try {
-    const options = await fetchAlternatives({ sentence, context: v.text, tone: $("tone").value, lang: $("lang").value, locked: lockedTerms() }, signal, v.engine === "quick");
+    const options = await fetchAlternatives({ sentence, context: v.text, tone: $("tone").value, lang: $("lang").value, locked: lockedTerms() }, signal, usesQuick(v));
     if (signal.aborted) return;
     altBody.replaceChildren(...options.map((o) => {
       const b = document.createElement("button"); b.type = "button"; b.className = "alt-opt"; b.textContent = o;
@@ -407,7 +416,7 @@ async function applyAlt(v, start, end, oldSentence, newSentence) {
   v.text = v.text.slice(0, start) + newSentence + v.text.slice(end);
   state.example = false;
   closeAlt();
-  if (v.engine === "quick") { renderAll(); setStatus("Sentence replaced."); return; }
+  if (usesQuick(v)) { renderAll(); setStatus("Sentence replaced."); return; }
   v.check = "pending"; renderAll();
   setStatus("Sentence replaced. Checking the meaning again…");
   try { v.check = await serverCheck(state.source, v.text, new AbortController().signal); setStatus("Sentence replaced."); }

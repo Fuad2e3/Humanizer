@@ -1,15 +1,21 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { aiScore } from "./detect.js?v=202611080937";
-import { words, spread } from "./text.js?v=202611080937";
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS } from "./rules-data.js?v=202611080937";
+import { aiScore } from "./detect.js?v=202611080954";
+import { words, spread } from "./text.js?v=202611080954";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611080954";
 
-const MARK = "";   // where something was deleted; tidy() cleans up around it
-const CAP = "";    // capitalize the next letter
+// Private-use characters mark spots in the text while the passes run; none survive to the output.
+const ch = (n) => String.fromCharCode(n);
+const PH_OPEN = ch(0xe000), PH_CLOSE = ch(0xe001);   // around a protected span
+const MARK = ch(0xe002);    // where something was deleted
+const CAP = ch(0xe003);     // capitalize the next letter
+const MARKC = ch(0xe004);   // where a phrase ending in a comma was deleted ("needless to say,")
+const MARKS = `[${MARK}${MARKC}]`;
 const L = "\\p{L}\\p{M}\\p{N}";
 const START = `(^|[.!?।]["'”’)\\]]*[ \\t]+|\\n[ \\t]*)`;
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const norm = (s) => s.toLowerCase().replace(/’/g, "'");
+const isUpper = (c) => !!c && c !== c.toLowerCase();
 
 // Small seeded random number generator (mulberry32), so the same seed gives the same rewrite.
 export function rng(seed) {
@@ -37,10 +43,21 @@ export function makePick(rand) {
   };
 }
 
+// Formal and Academic tones skip casual options; null means "keep the original wording".
+function tonePick(pick, tone) {
+  if (tone !== "formal" && tone !== "academic") return pick;
+  return (options, key) => {
+    const ok = options.filter((o) => !CASUAL.has(o));
+    return ok.length ? pick(ok, key) : null;
+  };
+}
+
 // ---------- Protecting what must not change ----------
 const PROTECT = [
   /https?:\/\/\S+?(?=[.,;:!?)\]]*(?:\s|$))/g,
   /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g,
+  // Links without https: www.example.com, example.com/page
+  /(?<![\w@./-])(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|org|net|io|ai|co|edu|gov|bd|uk|dev|app|info|me|xyz|tech|us|in)(?![a-z0-9-])(?:\/[^\s]*?)?(?=[.,;:!?)\]"”']*(?:\s|$))/gi,
   /(?<![\w@])@\w+/g,
   /(?<![\w&])#\w+/g,
   /"[^"\n]{1,300}"/g,
@@ -49,16 +66,17 @@ const PROTECT = [
   /\d+(?:[.,]\d+)*%?/g,
   /[০-৯]+(?:[.,][০-৯]+)*%?/g
 ];
+const RESTORE = new RegExp(`${PH_OPEN}(.)${PH_CLOSE}`, "gu");
 
 // Swaps protected spans for private-use placeholders. restore() puts them back.
 export function protect(text, locked = []) {
   const items = [];
-  const hold = (m) => { items.push(m); return "" + String.fromCharCode(0xe100 + items.length - 1) + ""; };
+  const hold = (m) => { items.push(m); return PH_OPEN + ch(0xe100 + items.length - 1) + PH_CLOSE; };
   let t = text;
   const terms = locked.filter(Boolean).sort((a, b) => b.length - a.length);
   if (terms.length) t = t.replace(new RegExp(`(?<![${L}])(?:${terms.map(esc).join("|")})(?![${L}])`, "giu"), hold);
   for (const re of PROTECT) t = t.replace(re, hold);
-  return { text: t, restore: (s) => s.replace(/(.)/gu, (m, c) => items[c.charCodeAt(0) - 0xe100] ?? m) };
+  return { text: t, restore: (s) => s.replace(RESTORE, (m, c) => items[c.charCodeAt(0) - 0xe100] ?? m) };
 }
 
 // ---------- Table passes ----------
@@ -74,16 +92,33 @@ function compiled(rows) {
 
 // Copies the case of the first letter from the original; "" becomes a deletion mark.
 function matchCase(from, to) {
-  if (to === "") return MARK;
-  const f = from[0];
-  return f !== f.toLowerCase() ? to[0].toUpperCase() + to.slice(1) : to[0].toLowerCase() + to.slice(1);
+  if (to === "") return from.trimEnd().endsWith(",") ? MARKC : MARK;
+  return isUpper(from[0]) ? to[0].toUpperCase() + to.slice(1) : to[0].toLowerCase() + to.slice(1);
+}
+
+// True when offset is the first word of a sentence (after spaces, quotes, brackets or deletion marks).
+const SKIP_BACK = new RegExp(`[ \\t"'“‘(\\[${MARK}${MARKC}${CAP}]`);
+function atSentenceStart(s, off) {
+  let i = off - 1;
+  while (i >= 0 && SKIP_BACK.test(s[i])) i--;
+  return i < 0 || s[i] === "\n" || /[.!?।]/.test(s[i]);
+}
+
+// A capitalized match in mid-sentence, or one followed by another capitalized word, is a name: leave it.
+function looksLikeName(m, off, s) {
+  if (!isUpper(m[0])) return false;
+  if (!atSentenceStart(s, off)) return true;
+  const next = s.slice(off + m.length).match(/^[ \t]+(\p{L})/u);
+  return !!next && isUpper(next[1]);
 }
 
 function applyTable(text, rows, pick, type) {
   const { re, map } = compiled(rows);
   const changes = [];
-  const out = text.replace(re, (m) => {
+  const out = text.replace(re, (m, off, s) => {
+    if (looksLikeName(m, off, s)) return m;
     const to = pick(map.get(norm(m)), norm(m));
+    if (to === null) return m;
     changes.push({ type, from: m, to });
     return matchCase(m, to);
   });
@@ -99,6 +134,21 @@ export function swapWords(text, pick) {
   return { text: b.text, changes: [...a.changes, ...b.changes] };
 }
 
+// "a"/"an" in front of a word the rules put in ("an innovative" -> "a new"). Only words the rules
+// inserted are checked, so the visitor's own wording is never touched.
+const AN_EXCEPT = /^(us|uni|eu|one|once)/i;
+export function fixArticles(text, changes) {
+  const inserted = new Set(changes.filter((c) => c.to).map((c) => c.to.split(/\s+/)[0].toLowerCase().replace(/[^\p{L}-]/gu, "")).filter(Boolean));
+  if (!inserted.size) return { text, changes: [] };
+  const out = text.replace(new RegExp(`(?<![${L}])(a|an)([ \\t]+)(\\p{L}[\\p{L}-]*)`, "giu"), (m, art, sp, w) => {
+    if (!inserted.has(w.toLowerCase())) return m;
+    const want = /^[aeiou]/i.test(w) && !AN_EXCEPT.test(w) ? "an" : "a";
+    if (art.toLowerCase() === want) return m;
+    return (isUpper(art[0]) ? want[0].toUpperCase() + want.slice(1) : want) + sp + w;
+  });
+  return { text: out, changes: [] };
+}
+
 // Removes or replaces linking words such as "Moreover," at the start of a sentence.
 const OPENER_KEYS = Object.keys(OPENERS).sort((a, b) => b.length - a.length);
 const OPENER_RE = new RegExp(`${START}(${OPENER_KEYS.map(esc).join("|")})[ \\t]*,[ \\t]*`, "giu");
@@ -109,15 +159,20 @@ export function dropOpeners(text, pick, tone = "natural") {
   const out = text.replace(OPENER_RE, (m, pre, word) => {
     const o = OPENER_MAP.get(word.toLowerCase());
     const to = pick(casual ? [...o.neutral, ...o.casual] : o.neutral, "open:" + word.toLowerCase());
+    if (to === null) return m;
     changes.push({ type: "opener", from: word, to });
     return pre + (to === "" ? MARK : to + " ");
   });
   return { text: out, changes };
 }
 
-// it is -> it's, unless the words end a clause ("Yes, it is.").
+// it is -> it's, unless the words end a clause: before punctuation, a dash, "and"/"or"/"but",
+// or after "what"/"who"/"where"/"how" ("what it is and", "where it is matters").
 const CONTRACT_MAP = new Map(CONTRACTIONS);
-const CONTRACT_RE = new RegExp(`(?<![${L}'’])(?:${CONTRACTIONS.map(([f]) => esc(f)).join("|")})(?![${L}'’])(?![ \\t]*(?:[.!?,;:)\\]"”\\n]|$))`, "giu");
+const CONTRACT_RE = new RegExp(
+  `(?<!(?:what|who|where|how|whatever|wherever|whoever|however)[ \\t]+)` +
+  `(?<![${L}'’])(?:${CONTRACTIONS.map(([f]) => esc(f)).join("|")})(?![${L}'’])` +
+  `(?![ \\t]*(?:[.!?,;:)\\]"”\\n\\-–—]|$))(?![ \\t]+(?:and|or|but)(?![${L}]))`, "giu");
 export function contract(text) {
   const changes = [];
   const out = text.replace(CONTRACT_RE, (m) => {
@@ -129,26 +184,40 @@ export function contract(text) {
   return { text: out, changes };
 }
 
-// Em-dashes read as machine-written; commas do the same job.
+// Em-dashes read as machine-written; commas do the same job. A dash between numbers or after a
+// quotation (an attribution) stays; a dash at the end of a line is dropped.
 export function fixDashes(text) {
   const changes = [];
-  const out = text.replace(/[ \t]*(?:—|\s--\s)[ \t]*/g, (m) => { changes.push({ type: "dash", from: m.trim(), to: "," }); return ", "; });
+  const out = text.replace(/([ \t]*)(—|(?<=\s)--(?=\s))([ \t]*)/g, (m, a, d, b, off, s) => {
+    const prev = s[off - 1], next = s[off + m.length];
+    if (/\d/.test(prev || "") && /\d/.test(next || "")) return m;
+    if (/[.!?]["”'’)]?$/.test(s.slice(Math.max(0, off - 2), off))) return m;
+    const end = next === undefined || next === "\n";
+    changes.push({ type: "dash", from: d, to: end ? "" : "," });
+    return end ? "" : ", ";
+  });
   return { text: out, changes };
 }
 
-// Cleans up around deletions: no stray commas or spaces, and a capital letter at the start of a sentence.
-const START_MARK = new RegExp(`${START}((?:${MARK}[ \\t,;:]*)+)`, "gu");
+// Cleans up around deletions: no stray commas or spaces, and a capital letter at the start of a
+// sentence (but never on a word like "iPhone").
+const START_MARK = new RegExp(`${START}((?:${MARKS}[ \\t,;:]*)+)`, "gu");
+const MID_MARK = new RegExp(`(,?)[ \\t]*((?:${MARKS}[ \\t]*)+)(,?)[ \\t]*`, "gu");
+const CAP_RE = new RegExp(`${CAP}([\\s"'“(]*)(\\p{L})([\\p{L}\\p{N}]*)`, "gu");
 export function tidy(text) {
-  if (!text.includes(MARK)) return { text, changes: [] };
+  if (!new RegExp(MARKS).test(text)) return { text, changes: [] };
   let t = text.replace(START_MARK, (m, pre) => pre + CAP);
-  t = t.replace(new RegExp(`[ \\t]*(?:${MARK}[ \\t]*)+`, "gu"), (m, off, s) => {
+  t = t.replace(MID_MARK, (m, before, marks, after, off, s) => {
     const prev = s[off - 1], next = s[off + m.length];
-    if (next === undefined || /[.!?,;:)\]]/.test(next)) return "";
-    if (prev === undefined || /[\s(["“]/.test(prev)) return "";
-    return " ";
+    if (next === undefined || /[.!?;:)\]]/.test(next)) return "";
+    // An aside between commas, or a deleted phrase that took its own comma: drop the comma before it too.
+    if ((before && after) || (before && marks.includes(MARKC))) return " ";
+    const keep = before || after;
+    if (prev === undefined || /[\s(["“]/.test(prev)) return keep ? keep + " " : "";
+    return keep ? keep + " " : " ";
   });
   t = t.replace(/,(?:[ \t]*,)+/g, ",");
-  t = t.replace(new RegExp(`${CAP}([\\s"'“(]*)(\\p{L})`, "gu"), (m, pre, ch) => pre + ch.toUpperCase()).replace(new RegExp(CAP, "g"), "");
+  t = t.replace(CAP_RE, (m, pre, c, rest) => pre + (/\p{Lu}/u.test(rest) ? c : c.toUpperCase()) + rest).split(CAP).join("");
   return { text: t, changes: [] };
 }
 
@@ -156,9 +225,13 @@ export function tidy(text) {
 // People mix short and long sentences. These passes split at a conjunction and merge short neighbours,
 // never adding or dropping a word except "and" in a merge. Bangla sentences are left alone.
 const MERGE_START = /^(The|This|That|It|They|We|You|He|She|There|These|Those)(?![\p{L}])/u;
+// A split is safe only when the second half starts a full clause: a pronoun or noun phrase, a number or a name.
+const SUBJECT = /^(i|you|he|she|it|we|they|this|these|those|there|the|a|an|my|our|your|his|her|their|its|some|many|most|all|each|every|no|one|people|everyone|everybody|nobody|someone|something|nothing)(?![\p{L}])/iu;
+const NUMBER_START = new RegExp(`^[${PH_OPEN}\\d]`);
+const startsClause = (r) => SUBJECT.test(r) || NUMBER_START.test(r) || /^\p{Lu}/u.test(r);
 const isLatin = (s) => (s.match(/[A-Za-z]/g) || []).length > s.replace(/\s/g, "").length * 0.6;
 const sentencesOf = (p) => p.match(/[^.!?]+(?:[.!?]+["'”’)\]]*|$)[ \t]*/g) || [];
-const capFirst = (s) => s.replace(/\p{L}/u, (c) => c.toUpperCase());
+const capFirst = (s) => s.replace(/^(\s*)(\p{L})/u, (m, sp, c) => sp + c.toUpperCase());
 const lowerFirst = (s) => s.replace(/^(\s*)(\p{L})/u, (m, sp, c) => sp + c.toLowerCase());
 
 // Runs fn on each paragraph, keeping the line breaks between them.
@@ -185,7 +258,10 @@ export function splitLong(text, pick, tone = "natural", { flat = false } = {}) {
       const len = words(s);
       let best = null;
       for (const m of s.matchAll(conj)) {
-        const left = words(s.slice(0, m.index)), right = words(s.slice(m.index + m[0].length));
+        const rest = s.slice(m.index + m[0].length);
+        if (!startsClause(rest)) continue;                                       // "so that", "and found", "but also"
+        if (m[1] && m[1].toLowerCase() === "and" && s.slice(0, m.index).includes(",")) continue;   // end of a list
+        const left = words(s.slice(0, m.index)), right = words(rest);
         if (!best || Math.abs(left - right) < Math.abs(best.left - best.right)) best = { m, left, right };
       }
       if (!best) return s;
@@ -203,6 +279,7 @@ export function splitLong(text, pick, tone = "natural", { flat = false } = {}) {
 }
 
 // Merges two neighbouring sentences with ", and" when the second starts with a pronoun or "The".
+// Both must have at least three words, so greetings such as "Hello." stay on their own.
 export function mergeShort(text, pick, { flat = false } = {}) {
   return perParagraph(text, (p, changes) => {
     const ss = sentencesOf(p), out = [];
@@ -211,8 +288,9 @@ export function mergeShort(text, pick, { flat = false } = {}) {
       if (next && isLatin(cur) && isLatin(next) && /[^.]\.[ \t]*$/.test(cur) && MERGE_START.test(next.trimStart())
         && !/,\s+and\s/i.test(cur + next)) {
         const a = words(cur), b = words(next);
-        const short = a <= 7 && b <= 7;
-        const flatPair = flat && a + b <= 28 && a <= 16 && b <= 16 && pick([true, false], "merge");
+        const enough = a >= 3 && b >= 3;
+        const short = enough && a <= 7 && b <= 7;
+        const flatPair = enough && flat && a + b <= 28 && a <= 16 && b <= 16 && pick([true, false], "merge");
         if (short || flatPair) {
           out.push(cur.trimEnd().replace(/\.$/, "") + ", and " + lowerFirst(next.trimStart()));
           changes.push({ type: "merge", from: ".", to: ", and" });
@@ -252,7 +330,7 @@ const TARGET = 30;   // stop once the pattern score is at or below this
 // One rewrite with one seed: light = phrases and words; medium adds openers, contractions and dashes;
 // strong adds sentence rhythm.
 function runOnce(text, { strength, tone, locked, seed }) {
-  const pick = makePick(rng(seed));
+  const pick = tonePick(makePick(rng(seed)), tone);
   const p = protect(text, locked);
   const level = LEVELS.indexOf(strength);
   const changes = [];
@@ -261,6 +339,7 @@ function runOnce(text, { strength, tone, locked, seed }) {
   if (level >= 1) step(dropOpeners(t, pick, tone));
   step(replacePhrases(t, pick));
   step(swapWords(t, pick));
+  step(fixArticles(t, changes));
   if (level >= 1) {
     if (tone !== "formal" && tone !== "academic") step(contract(t));
     step(fixDashes(t));
@@ -298,12 +377,14 @@ export function humanizeLocal(text, { strength = "medium", tone = "natural", loc
 // Small, safe changes to a sentence that is already clean: another linking word, a near-synonym,
 // or a contraction written out (or made). Used only for the sentence alternatives.
 const EXPAND = new Map(CONTRACTIONS.map(([full, short]) => [short.toLowerCase(), full]));
-function variations(sentence, locked) {
+const SHORT_RE = new RegExp(`(?<![${L}'’])(${[...EXPAND.keys()].map(esc).join("|")})(?![${L}])`, "iu");
+function variations(sentence, locked, tone) {
+  const formal = tone === "formal" || tone === "academic";
   const p = protect(sentence, locked), t = p.text, out = [];
   const lead = t.match(/^\s*/)[0], body = t.slice(lead.length);
   for (const group of OPENER_SIBLINGS) {
     const hit = group.find((o) => body.startsWith(o + " "));
-    if (hit) for (const o of group) if (o !== hit) out.push(lead + o + body.slice(hit.length));
+    if (hit) for (const o of group) if (o !== hit && !(formal && CASUAL.has(o))) out.push(lead + o + body.slice(hit.length));
   }
   for (const group of SIBLINGS) {
     for (const w of group) {
@@ -311,9 +392,9 @@ function variations(sentence, locked) {
       if (re.test(t)) for (const o of group) if (o !== w) out.push(t.replace(re, (m) => matchCase(m, o)));
     }
   }
-  const short = t.match(new RegExp(`(?<![${L}])(${[...EXPAND.keys()].map(esc).join("|")})(?![${L}])`, "iu"));
-  if (short) out.push(t.replace(short[0], matchCase(short[0], EXPAND.get(short[0].toLowerCase()))));
-  else { const c = contract(t); if (c.changes.length) out.push(c.text); }
+  const short = t.match(SHORT_RE);
+  if (short) out.push(t.slice(0, short.index) + matchCase(short[0], EXPAND.get(short[0].toLowerCase())) + t.slice(short.index + short[0].length));
+  else if (!formal) { const c = contract(t); if (c.changes.length) out.push(c.text); }
   return out.map(p.restore);
 }
 
@@ -323,6 +404,6 @@ export function sentenceOptionsLocal(sentence, { tone = "natural", locked = [] }
   const found = [], s = sentence.trim();
   const add = (t) => { t = t.trim(); if (t && t !== s && !found.includes(t)) found.push(t); };
   for (let seed = 1; seed <= 12 && found.length < 3; seed++) add(runOnce(sentence, { strength: "strong", tone, locked, seed }).text);
-  for (const t of variations(sentence, locked)) if (found.length < 3) add(t);
+  for (const t of variations(sentence, locked, tone)) if (found.length < 3) add(t);
   return found;
 }
