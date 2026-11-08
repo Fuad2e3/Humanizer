@@ -5,282 +5,220 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Humanizer</title>
 <meta name="description" content="Rewrite AI text so it reads like a person wrote it, with an AI score, three modes, up to three versions and Word file upload. Meaning, numbers and names stay the same.">
-<meta name="theme-color" content="#0B1017" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#F6F8FA" media="(prefers-color-scheme: light)">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2310B981'/%3E%3Cstop offset='1' stop-color='%230EA5E9'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='url(%23g)'/%3E%3Cpath d='M9 22V10l7 7 7-7v12' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#0C0C0E" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#FAFAFA" media="(prefers-color-scheme: light)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%237C5CFF'/%3E%3Cpath d='M9 22V10l7 7 7-7v12' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hind+Siliguri:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#10B981"/><stop offset="1" stop-color="#0EA5E9"/></linearGradient></defs></svg>
 
-<nav class="nav gutter" aria-label="Main">
-  <div class="wrap">
-    <a class="brand" href="#top" aria-label="Humanizer">
-      <span class="logo" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 32 32"><path d="M8 23V9l8 8 8-8v14" fill="none" stroke="white" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      Humanizer
-    </a>
-    <div class="nav-links">
-      <a href="#pricing" class="hide-sm">Pricing</a>
-      <button type="button" class="nav-btn" id="open-history" aria-label="History">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
-        <span class="hide-xs">History</span><span class="count" id="history-count" hidden></span>
-      </button>
+<header class="nav">
+  <a class="brand" href="#top" aria-label="Humanizer">
+    <span class="logo" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 32 32"><path d="M8 23V9l8 8 8-8v14" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    Humanizer
+  </a>
+  <nav class="nav-links" aria-label="Main">
+    <a href="#pricing">Pricing</a>
+    <button type="button" class="nav-btn" id="open-history" aria-label="History">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+      <span class="hide-xs">History</span><span class="count" id="history-count" hidden></span>
+    </button>
+  </nav>
+</header>
+
+<div class="subbar" id="top" aria-label="Rewrite settings">
+  <div class="seg" role="group" aria-label="Mode" id="strength">
+    <button type="button" data-v="light" aria-pressed="false" data-desc="Fixes only the robotic parts" title="Fixes only the robotic parts"><i class="lvl" data-l="1" aria-hidden="true"></i>Light</button>
+    <button type="button" data-v="medium" aria-pressed="true" data-desc="Rewrites sentences, keeps the structure" title="Rewrites sentences, keeps the structure"><i class="lvl" data-l="2" aria-hidden="true"></i>Balanced</button>
+    <button type="button" data-v="strong" aria-pressed="false" data-desc="Restructures everything, same meaning" title="Restructures everything, same meaning"><i class="lvl" data-l="3" aria-hidden="true"></i>Deep</button>
+  </div>
+  <div class="seg" role="group" aria-label="Tone" id="tone">
+    <button type="button" data-v="natural" aria-pressed="true">Natural</button>
+    <button type="button" data-v="casual" aria-pressed="false">Casual</button>
+    <button type="button" data-v="formal" aria-pressed="false">Formal</button>
+    <button type="button" data-v="academic" aria-pressed="false">Academic</button>
+    <button type="button" data-v="blog" aria-pressed="false">Blog</button>
+  </div>
+  <div class="seg seg-num" role="group" aria-label="Number of versions" id="versions">
+    <button type="button" data-v="1" aria-pressed="true" title="1 version">1×</button>
+    <button type="button" data-v="2" aria-pressed="false" title="2 versions">2×</button>
+    <button type="button" data-v="3" aria-pressed="false" title="3 versions">3×</button>
+  </div>
+  <button type="button" class="chip-btn" id="opt-toggle" aria-expanded="false" aria-controls="opts">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    Locked <span class="mini-count" id="lock-count">0</span>
+  </button>
+  <p class="sr-only" id="mode-desc" aria-live="polite"></p>
+  <p class="status" id="status" role="status"></p>
+</div>
+
+<div class="opts" id="opts" hidden>
+  <label for="locked">Locked words stay exactly as written. Separate them with commas.</label>
+  <input type="text" id="locked" value="Facebook, TikTok, Bangladesh" placeholder="e.g. brand names, technical terms, people">
+</div>
+
+<section class="keybar" id="keybar" hidden aria-label="Claude API key">
+  <p><b>Enter your Claude API key.</b> This page has no server, so rewrites use your own key. It goes straight from your browser to Anthropic. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a key</a></p>
+  <div class="keyform">
+    <input type="password" id="apikey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" aria-label="API key">
+    <label class="check-label"><input type="checkbox" id="remember"> Remember</label>
+    <button type="button" class="link-btn" id="forget">Forget</button>
+  </div>
+</section>
+
+<main class="app">
+  <section class="sheet" aria-label="Your text">
+    <div class="sheet-head">
+      <h2>Your text</h2>
+      <div class="head-tools">
+        <span class="ai-badge" id="in-ai" title="AI score estimate">AI —</span>
+        <button type="button" class="icon-btn" id="upload" title="Upload .txt, .md or .docx" aria-label="Upload a file"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></button>
+        <button type="button" class="icon-btn" id="clear" title="Clear" aria-label="Clear the text"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+        <input type="file" id="file" hidden>
+      </div>
+    </div>
+    <div class="editor" id="editor">
+      <div class="backdrop" aria-hidden="true"><div id="backdrop-inner"></div></div>
+      <textarea id="input" aria-label="Original text" spellcheck="false" placeholder="Paste your text here, or drop a .txt or .docx file"></textarea>
+      <div class="drop" id="drop" hidden><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Drop the file</span></div>
+    </div>
+    <div class="sheet-foot">
+      <div class="wc">
+        <span class="mono" id="wc-text">0 / 500 words</span>
+        <span class="wc-bar" aria-hidden="true"><i id="wc-bar"></i></span>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn ghost" id="stop" hidden>Stop</button>
+        <button type="button" class="btn" id="again" hidden>Try again</button>
+        <button type="button" class="btn primary" id="go" title="Ctrl + Enter"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/></svg><span>Humanize</span></button>
+      </div>
+    </div>
+  </section>
+
+  <section class="sheet" aria-label="Humanized text">
+    <div class="sheet-head">
+      <h2>Humanized <span class="example-badge" id="example-badge">Example</span></h2>
+      <div class="head-tools">
+        <span class="ai-badge" id="out-ai" title="AI score estimate">AI —</span>
+        <div class="seg seg-sm" role="tablist" aria-label="View">
+          <button type="button" role="tab" id="tab-result" aria-selected="true">Result</button>
+          <button type="button" role="tab" id="tab-diff" aria-selected="false">Changes</button>
+        </div>
+      </div>
+    </div>
+    <div class="vtabs" id="vtabs" role="tablist" aria-label="Versions" hidden></div>
+    <div class="output" id="output" role="tabpanel" aria-live="polite"></div>
+    <div class="sheet-foot">
+      <span class="mono" id="out-count"></span>
+      <div class="actions">
+        <button type="button" class="btn ghost" id="use-version" hidden>Edit this</button>
+        <button type="button" class="btn" id="copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>Copy</span></button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="side" id="report" aria-label="Quality report">
+    <div class="block">
+      <div class="block-head"><h3>AI score</h3><span class="pill idle" id="ai-pill">—</span></div>
+      <div class="meter-row"><span class="mlabel">Before</span><div class="meter" aria-hidden="true"><i id="ai-before-bar"></i></div><span class="meter-num" id="ai-before-num">—</span></div>
+      <div class="meter-row"><span class="mlabel">After</span><div class="meter" aria-hidden="true"><i id="ai-after-bar"></i></div><span class="meter-num" id="ai-after-num">—</span></div>
+      <p class="note" id="ai-signals"></p>
+      <p class="fine">An estimate from writing patterns, not a real AI detector. No detector is 100% accurate.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-head"><h3>Meaning kept</h3><span class="pill idle" id="m-pill">—</span></div>
+      <div class="score">
+        <div class="ring" aria-hidden="true"><svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="27"/><circle class="val" id="m-ring" cx="32" cy="32" r="27" stroke-dasharray="169.6" stroke-dashoffset="169.6"/></svg><span id="m-num">—</span></div>
+        <p class="note" id="m-verdict">After the rewrite, Claude compares it with the original to check that no ideas were lost.</p>
+      </div>
+      <div id="m-detail" class="detail"></div>
+    </div>
+
+    <div class="block">
+      <div class="block-head"><h3>Numbers and locked words</h3><span class="pill idle" id="f-pill">—</span></div>
+      <div class="chips" id="f-chips"></div>
+      <p class="note" id="f-note"></p>
+    </div>
+
+    <div class="block">
+      <div class="block-head"><h3>AI phrases</h3><span class="pill idle" id="a-pill">—</span></div>
+      <div class="chips" id="a-chips"></div>
+      <p class="note" id="a-note"></p>
+    </div>
+
+    <div class="block">
+      <div class="block-head"><h3>Sentence rhythm</h3><span class="pill idle" id="r-pill">—</span></div>
+      <div class="rhythm">
+        <div class="rhythm-row"><span class="mlabel">Before</span><div class="bars" id="r-in"></div></div>
+        <div class="rhythm-row"><span class="mlabel">After</span><div class="bars out" id="r-out"></div></div>
+      </div>
+      <p class="note" id="r-note">People mix short and long sentences. AI sentences tend to be the same length.</p>
+    </div>
+  </aside>
+</main>
+
+<section class="pricing" id="pricing" aria-labelledby="price-h">
+  <div class="pricing-head">
+    <h2 id="price-h">Pricing</h2>
+    <p>Start free. Paid plans are coming soon.</p>
+  </div>
+  <div class="plans">
+    <div class="plan">
+      <h3>Free</h3>
+      <p class="price"><b>৳0</b><span>/ month</span></p>
+      <ul>
+        <li>Up to 500 words per rewrite</li>
+        <li>3 modes, 5 tones</li>
+        <li>Up to 3 versions</li>
+        <li>AI score and meaning check</li>
+        <li>History of 30 rewrites in your browser</li>
+      </ul>
+      <a class="btn plan-btn" href="#top">Get started</a>
+    </div>
+    <div class="plan featured">
+      <h3>Pro <span class="plan-tag">Most popular</span></h3>
+      <p class="price"><b>৳299</b><span>/ month</span></p>
+      <ul>
+        <li>Up to 3,000 words per rewrite</li>
+        <li>Everything in Free</li>
+        <li>Faster responses</li>
+        <li>History on all your devices</li>
+        <li>Email support</li>
+      </ul>
+      <button type="button" class="btn primary plan-btn" disabled>Coming soon</button>
+    </div>
+    <div class="plan">
+      <h3>Team</h3>
+      <p class="price"><b>৳999</b><span>/ month</span></p>
+      <ul>
+        <li>Up to 5 people</li>
+        <li>Everything in Pro</li>
+        <li>Shared locked-word lists</li>
+        <li>Usage report</li>
+      </ul>
+      <button type="button" class="btn plan-btn" disabled>Coming soon</button>
     </div>
   </div>
-</nav>
-
-<main id="top" class="gutter">
-  <div class="wrap">
-    <header class="hero">
-      <h1>AI text, <span class="grad-text">in a human voice.</span></h1>
-      <p class="sub">Turns robotic writing into natural writing. Your meaning, numbers and names stay exactly the same, and every rewrite is checked.</p>
-      <ul class="trust">
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>AI score before and after</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Up to 3 versions in one click</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Word file upload</li>
-        <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Meaning check</li>
-      </ul>
-    </header>
-
-    <section class="work" id="tool" aria-label="Rewrite workspace">
-      <div class="toolbar" aria-label="Rewrite settings">
-        <div class="field">
-          <span class="label" id="mode-l">Mode</span>
-          <div class="seg" role="group" aria-labelledby="mode-l" id="strength">
-            <button type="button" data-v="light" aria-pressed="false" data-desc="Fixes only the robotic parts"><i class="lvl" data-l="1" aria-hidden="true"></i>Light</button>
-            <button type="button" data-v="medium" aria-pressed="true" data-desc="Rewrites sentences, keeps the structure"><i class="lvl" data-l="2" aria-hidden="true"></i>Balanced</button>
-            <button type="button" data-v="strong" aria-pressed="false" data-desc="Restructures everything, same meaning"><i class="lvl" data-l="3" aria-hidden="true"></i>Deep</button>
-          </div>
-        </div>
-        <div class="field">
-          <span class="label" id="tone-l">Tone</span>
-          <div class="seg" role="group" aria-labelledby="tone-l" id="tone">
-            <button type="button" data-v="natural" aria-pressed="true">Natural</button>
-            <button type="button" data-v="casual" aria-pressed="false">Casual</button>
-            <button type="button" data-v="formal" aria-pressed="false">Formal</button>
-            <button type="button" data-v="academic" aria-pressed="false">Academic</button>
-            <button type="button" data-v="blog" aria-pressed="false">Blog</button>
-          </div>
-        </div>
-        <div class="field">
-          <span class="label" id="ver-l">Versions</span>
-          <div class="seg" role="group" aria-labelledby="ver-l" id="versions">
-            <button type="button" data-v="1" aria-pressed="true">1</button>
-            <button type="button" data-v="2" aria-pressed="false">2</button>
-            <button type="button" data-v="3" aria-pressed="false">3</button>
-          </div>
-        </div>
-        <button type="button" class="opt-toggle" id="opt-toggle" aria-expanded="false" aria-controls="opts">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-          Locked words <span class="mini-count" id="lock-count">0</span>
-          <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-        </button>
-        <p class="mode-desc-line" id="mode-desc">Rewrites sentences, keeps the structure</p>
-        <div class="opts" id="opts" hidden>
-          <label class="label" for="locked">Locked words are never changed. Separate them with commas.</label>
-          <input type="text" id="locked" value="Facebook, TikTok, Bangladesh" placeholder="e.g. brand names, technical terms, people">
-        </div>
-      </div>
-
-      <section class="keybar" id="keybar" hidden aria-label="Claude API key">
-        <div class="keytext">
-          <h2><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M17 6l3 3M14.5 8.5l2 2"/></svg>Enter your Claude API key</h2>
-          <p>This page has no server, so rewrites need your own Anthropic API key. The key goes straight from your browser to Anthropic and nowhere else. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Where do I get one?</a></p>
-        </div>
-        <div class="keyform">
-          <label class="label" for="apikey">API key</label>
-          <input type="password" id="apikey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
-          <div class="keyopts">
-            <label class="check-label"><input type="checkbox" id="remember"> Remember in this browser</label>
-            <button type="button" class="btn small ghost" id="forget">Forget</button>
-          </div>
-        </div>
-      </section>
-
-      <div class="desk">
-        <div class="pane">
-          <div class="pane-head">
-            <h2><span class="dot" aria-hidden="true"></span>Your text</h2>
-            <div class="head-tools">
-              <span class="ai-badge" id="in-ai" title="AI score estimate">AI —</span>
-              <button type="button" class="btn small" id="upload"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>Upload</button>
-              <input type="file" id="file" hidden>
-            </div>
-          </div>
-          <div class="editor" id="editor">
-            <div class="backdrop" aria-hidden="true"><div id="backdrop-inner"></div></div>
-            <textarea id="input" aria-label="Original text" spellcheck="false" placeholder="Paste your text here, or drop a .txt or .docx file"></textarea>
-            <div class="drop" id="drop" hidden><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Drop the file</span></div>
-          </div>
-          <div class="pane-foot">
-            <div class="wc">
-              <span class="mono" id="wc-text">0 / 500 words</span>
-              <span class="wc-bar" aria-hidden="true"><i id="wc-bar"></i></span>
-            </div>
-            <span class="legend hide-xs"><mark>yellow</mark> = AI phrase</span>
-            <button type="button" class="btn small ghost" id="clear">Clear</button>
-          </div>
-        </div>
-
-        <div class="pane">
-          <div class="pane-head">
-            <h2><span class="dot live" aria-hidden="true"></span>Humanized <span class="example-badge" id="example-badge">Example</span></h2>
-            <div class="head-tools">
-              <span class="ai-badge" id="out-ai" title="AI score estimate">AI —</span>
-              <div class="tabs" role="tablist" aria-label="View">
-                <button type="button" role="tab" id="tab-result" aria-selected="true">Result</button>
-                <button type="button" role="tab" id="tab-diff" aria-selected="false">Changes</button>
-              </div>
-            </div>
-          </div>
-          <div class="vtabs" id="vtabs" role="tablist" aria-label="Versions" hidden></div>
-          <div class="output" id="output" role="tabpanel" aria-live="polite"></div>
-          <div class="pane-foot">
-            <span class="mono" id="out-count"></span>
-            <div class="foot-actions">
-              <button type="button" class="btn small" id="use-version" hidden>Edit this</button>
-              <button type="button" class="btn small" id="copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>Copy</span></button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="actionbar">
-        <button type="button" class="btn primary" id="go" title="Ctrl + Enter"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15z"/></svg><span>Humanize</span></button>
-        <button type="button" class="btn" id="again" hidden>Try again</button>
-        <button type="button" class="btn ghost" id="stop" hidden>Stop</button>
-        <span class="status" id="status" role="status"></span>
-        <a class="summary" href="#report" id="summary" aria-label="Open the quality report">
-          <span class="sum" id="sum-ai"><span class="sum-k">AI</span><b>—</b></span>
-          <span class="sum" id="sum-mean"><span class="sum-k">Meaning</span><b>—</b></span>
-          <span class="sum" id="sum-facts"><span class="sum-k">Facts</span><b>—</b></span>
-        </a>
-      </div>
-    </section>
-
-    <section class="section" id="report" aria-labelledby="report-h">
-      <div class="section-head">
-        <h2 id="report-h">Quality report</h2>
-        <p>Every rewrite is checked automatically. With several versions, the report follows the version you are viewing.</p>
-      </div>
-
-      <div class="ai-card" aria-labelledby="ai-h">
-        <div class="ai-card-head">
-          <h3 id="ai-h"><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4v1a3 3 0 0 1 3 3v1a3 3 0 0 1-1 5.2V17a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4v-.8A3 3 0 0 1 5 11v-1a3 3 0 0 1 3-3V6a4 4 0 0 1 4-4z"/><path d="M9 13h.01M15 13h.01"/></svg></span>AI detection score</h3>
-          <span class="pill idle" id="ai-pill">—</span>
-        </div>
-        <div class="meters">
-          <div class="meter-row">
-            <span class="label">Before</span>
-            <div class="meter" aria-hidden="true"><i id="ai-before-bar"></i></div>
-            <span class="meter-num" id="ai-before-num">—</span>
-          </div>
-          <div class="meter-row">
-            <span class="label">After</span>
-            <div class="meter out" aria-hidden="true"><i id="ai-after-bar"></i></div>
-            <span class="meter-num" id="ai-after-num">—</span>
-          </div>
-          <div class="meter-scale" aria-hidden="true"><span>0 · Human-like</span><span>Mixed</span><span>AI-like · 100</span></div>
-        </div>
-        <p class="ai-signals" id="ai-signals"></p>
-        <p class="fine">This is an estimate based on writing patterns (stock phrases, sentence length, sentence openers). It is not the result of a real AI detector, and no detector is 100% accurate.</p>
-      </div>
-
-      <div class="checks">
-        <div class="check">
-          <div class="check-head"><h3><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></span>Meaning kept?</h3><span class="pill idle" id="m-pill">—</span></div>
-          <div class="score">
-            <div class="ring" aria-hidden="true"><svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="27"/><circle class="val" id="m-ring" cx="32" cy="32" r="27" stroke-dasharray="169.6" stroke-dashoffset="169.6"/></svg><span id="m-num">—</span></div>
-            <p id="m-verdict">After the rewrite, Claude compares it with the original to check that no ideas were lost.</p>
-          </div>
-          <div id="m-detail"></div>
-        </div>
-        <div class="check">
-          <div class="check-head"><h3><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>Numbers and locked words</h3><span class="pill idle" id="f-pill">—</span></div>
-          <div class="chips" id="f-chips"></div>
-          <p id="f-note"></p>
-        </div>
-        <div class="check">
-          <div class="check-head"><h3><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg></span>AI-sounding phrase</h3><span class="pill idle" id="a-pill">—</span></div>
-          <div class="chips" id="a-chips"></div>
-          <p id="a-note"></p>
-        </div>
-        <div class="check">
-          <div class="check-head"><h3><span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M9 20V4M14 20v-7M19 20V8"/></svg></span>Sentence rhythm</h3><span class="pill idle" id="r-pill">—</span></div>
-          <div class="rhythm">
-            <div class="rhythm-row"><span class="label">Before</span><div class="bars" id="r-in"></div></div>
-            <div class="rhythm-row"><span class="label">After</span><div class="bars out" id="r-out"></div></div>
-          </div>
-          <p id="r-note">People mix short and long sentences. AI sentences tend to be the same length.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="pricing" aria-labelledby="price-h">
-      <div class="section-head">
-        <h2 id="price-h">Pricing</h2>
-        <p>Start free. Paid plans are coming soon.</p>
-      </div>
-      <div class="plans">
-        <div class="plan">
-          <h3>Free</h3>
-          <p class="price"><b>৳0</b><span>/ month</span></p>
-          <ul>
-            <li>Up to 500 words per rewrite</li>
-            <li>3 modes, 5 tones</li>
-            <li>Up to 3 versions</li>
-            <li>AI score and meaning check</li>
-            <li>History of 30 rewrites in your browser</li>
-          </ul>
-          <a class="btn plan-btn" href="#tool">Get started</a>
-        </div>
-        <div class="plan featured">
-          <span class="plan-tag">Most popular</span>
-          <h3>Pro</h3>
-          <p class="price"><b>৳299</b><span>/ month</span></p>
-          <ul>
-            <li>Up to 3,000 words per rewrite</li>
-            <li>Everything in Free</li>
-            <li>Faster responses</li>
-            <li>History on all your devices</li>
-            <li>Email support</li>
-          </ul>
-          <button type="button" class="btn primary plan-btn" disabled>Coming soon</button>
-        </div>
-        <div class="plan">
-          <h3>Team</h3>
-          <p class="price"><b>৳999</b><span>/ month</span></p>
-          <ul>
-            <li>Up to 5 people</li>
-            <li>Everything in Pro</li>
-            <li>Shared locked-word lists</li>
-            <li>Usage report</li>
-          </ul>
-          <button type="button" class="btn plan-btn" disabled>Coming soon</button>
-        </div>
-      </div>
-    </section>
-
-  </div>
-</main>
+</section>
 
 <dialog id="history" class="drawer" aria-labelledby="history-h">
   <div class="drawer-head">
     <h2 id="history-h">History</h2>
-    <button type="button" class="btn small ghost" id="history-close" aria-label="Close">
+    <button type="button" class="icon-btn" id="history-close" aria-label="Close">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
     </button>
   </div>
   <p class="drawer-note">Saved only in this browser.</p>
   <ul class="history-list" id="history-list"></ul>
   <div class="history-empty" id="history-empty">
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
     <p>No rewrites yet. They will show up here after you press "Humanize".</p>
   </div>
-  <div class="drawer-foot"><button type="button" class="btn small" id="history-clear">Clear all</button></div>
+  <div class="drawer-foot"><button type="button" class="btn" id="history-clear">Clear all</button></div>
 </dialog>
 
 <script type="module" src="app.js"></script>
