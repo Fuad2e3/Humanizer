@@ -67,7 +67,8 @@ npm run bump
 | Name | Default | Purpose |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | (required) | Claude API key |
-| `CLAUDE_MODEL` | `claude-opus-5-5` | Model used for rewrites and meaning checks |
+| `CLAUDE_MODEL` | `claude-opus-5-5` | Model used for rewrites |
+| `CLAUDE_FAST_MODEL` | `claude-haiku-5-5` | Model used for meaning checks and sentence options |
 | `RATE_LIMIT_PER_MIN` | `30` | Requests allowed per IP per minute (3 versions = 6 requests; each sentence rewrite = 2) |
 | `FREE_WORD_LIMIT` | `500` | Maximum words per rewrite |
 | `PORT` | `3000` | Port for the local server |
