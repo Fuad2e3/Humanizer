@@ -31,10 +31,42 @@ const setStatus = (text, err = false) => { status.className = err ? "status err"
 
 // ---------- Settings ----------
 const seg = (id) => $(id).querySelector('[aria-pressed="true"]').dataset.v;
-const setSeg = (id, v) => $(id).querySelectorAll("button[data-v]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === v)));
+const setSeg = (id, v) => { $(id).querySelectorAll("button[data-v]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === v))); moveThumb($(id)); };
 ["tone", "strength", "versions"].forEach((id) => $(id).addEventListener("click", (e) => {
   const b = e.target.closest("button[data-v]"); if (b) setSeg(id, b.dataset.v);
 }));
+// ---------- Motion helpers ----------
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// A thumb that slides under the selected button of each segmented control.
+function moveThumb(seg) {
+  const sel = seg.querySelector('[aria-pressed="true"], [aria-selected="true"]');
+  const thumb = seg.querySelector(".seg-thumb");
+  if (!sel || !thumb) return;
+  thumb.style.width = sel.offsetWidth + "px";
+  thumb.style.transform = `translateX(${sel.offsetLeft}px)`;
+}
+const segs = [...document.querySelectorAll(".seg")];
+segs.forEach((seg) => { const t = document.createElement("span"); t.className = "seg-thumb"; t.setAttribute("aria-hidden", "true"); seg.prepend(t); seg.classList.add("no-anim"); });
+const moveThumbs = () => segs.forEach(moveThumb);
+addEventListener("resize", () => { segs.forEach((s) => s.classList.add("no-anim")); moveThumbs(); requestAnimationFrame(() => segs.forEach((s) => s.classList.remove("no-anim"))); });
+
+// Counts a number up or down to its new value.
+function countTo(el, value) {
+  if (value == null) { el.textContent = "—"; el.dataset.v = ""; return; }
+  const from = Number(el.dataset.v || 0);
+  el.dataset.v = String(value);
+  if (reduceMotion || from === value) { el.textContent = String(value); return; }
+  const start = performance.now(), dur = 700;
+  const step = (now) => {
+    const t = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - t, 3);
+    if (el.dataset.v !== String(value)) return;
+    el.textContent = String(Math.round(from + (value - from) * e));
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 const lockedTerms = () => $("locked").value.split(",").map((s) => s.trim()).filter(Boolean);
 
 // Mode description under the toolbar, and the locked-words panel
@@ -83,6 +115,7 @@ function renderOutput() {
   $("out-count").textContent = has ? `${words(v.text)} words · ${sentences(v.text).length} sentences` : "";
   $("tab-result").setAttribute("aria-selected", String(state.tab === "result"));
   $("tab-diff").setAttribute("aria-selected", String(state.tab === "diff"));
+  moveThumb($("tab-result").parentElement);
   $("use-version").hidden = !has || state.example || v.status === "streaming";
   setBadge($("out-ai"), has && v.status !== "streaming" ? aiScore(v.text) : null);
 }
@@ -116,7 +149,7 @@ function renderAI(src, out) {
   const meter = (bar, num, r) => {
     $(bar).style.width = (r ? r.score : 0) + "%";
     $(bar).className = r ? r.tone : "";
-    $(num).textContent = r ? String(r.score) : "—";
+    countTo($(num), r ? r.score : null);
   };
   meter("ai-before-bar", "ai-before-num", before);
   meter("ai-after-bar", "ai-after-num", after);
@@ -173,26 +206,12 @@ function renderChecks() {
     $("f-note").textContent = miss ? "The red ones are missing from the rewrite. Try again or fix them by hand." : "Every number and locked word is kept exactly.";
   }
   renderMeaning(v);
-  renderSummary(v, src, out, out && items.length ? items.length - miss : null, items.length);
 }
 
-// Compact chips next to the Humanize button
-function renderSummary(v, src, out, kept, total) {
-  const set = (id, tone, text) => { const el = $(id); el.className = "sum" + (tone ? " " + tone : ""); el.querySelector("b").textContent = text; };
-  const before = aiScore(src), after = out ? aiScore(out) : null;
-  const ai = after || before;
-  set("sum-ai", ai?.tone, before && after ? `${before.score} → ${after.score}` : ai ? String(ai.score) : "—");
-  const c = v.check;
-  if (c === "pending") set("sum-mean", "", "…");
-  else if (c) set("sum-mean", c.score >= 90 ? "ok" : c.score >= 75 ? "warn" : "bad", `${c.score}/100`);
-  else set("sum-mean", "", "—");
-  if (kept == null) set("sum-facts", "", total ? `${total} to check` : "—");
-  else set("sum-facts", kept === total ? "ok" : "bad", `${kept}/${total} kept`);
-}
 
 function renderMeaning(v) {
   const c = v.check, detail = $("m-detail"); detail.replaceChildren();
-  const ring = (n) => { $("m-ring").style.strokeDashoffset = String(169.6 * (1 - (n ?? 0) / 100)); $("m-num").textContent = n == null ? "—" : String(n); };
+  const ring = (n) => { $("m-ring").style.strokeDashoffset = String(169.6 * (1 - (n ?? 0) / 100)); countTo($("m-num"), n ?? null); };
   if (c === "pending") { ring(null); setPill("m-pill", "idle", "Checking…"); $("m-verdict").textContent = "Claude is comparing the rewrite with the original…"; return; }
   if (!c) {
     ring(null); setPill("m-pill", "idle", "—");
@@ -369,6 +388,7 @@ async function run() {
 
   await Promise.all(state.versions.map((_, i) => one(i)));
   setBusy(false);
+  output.classList.remove("fresh"); void output.offsetWidth; output.classList.add("fresh");
 
   const good = state.versions.filter((v) => v.status === "done" && v.text);
   const bad = state.versions.filter((v) => v.status === "err");
@@ -486,7 +506,7 @@ function restore(h) {
   renderAll();
   setStatus(`Opened the rewrite from ${when(h.at)}.`);
   dialog.close();
-  $("tool").scrollIntoView({ block: "start" });
+  scrollTo({ top: 0 });
 }
 
 $("open-history").addEventListener("click", () => { renderHistory(); dialog.showModal(); });
@@ -509,6 +529,9 @@ $("history-clear").addEventListener("click", (e) => {
 input.value = EXAMPLE_IN;
 showModeDesc(); showLockCount();
 syncInput();
+moveThumbs();
+requestAnimationFrame(() => requestAnimationFrame(() => segs.forEach((s) => s.classList.remove("no-anim"))));
+document.fonts?.ready.then(moveThumbs);
 renderAll();
 renderHistory();
 detectMode();
