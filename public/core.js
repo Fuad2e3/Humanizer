@@ -62,7 +62,7 @@ export function parseOptions(body, { maxWords = FREE_WORD_LIMIT } = {}) {
     text,
     tone: pick(body.tone, TONES, "natural"),
     strength: pick(body.strength, STRENGTH, "medium"),
-    lang: pick(body.lang, LANGS, "same"),
+    lang: pick(body.lang, LANGS, "en"),
     variant: Number.isInteger(body.variant) && body.variant >= 0 && body.variant < VARIANTS.length ? body.variant : 0,
     locked
   };

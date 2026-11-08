@@ -307,7 +307,7 @@ async function run() {
   if (n > wordLimit) { setStatus(`You can rewrite up to ${wordLimit} words at a time. This text has ${n}. Please split it into smaller parts.`, true); return; }
 
   const count = Number(seg("versions"));
-  const settings = { tone: seg("tone"), strength: seg("strength"), lang: $("lang").value, locked: lockedTerms() };
+  const settings = { tone: seg("tone"), strength: seg("strength"), lang: "en", locked: lockedTerms() };
   ctl = new AbortController();
   const signal = ctl.signal;
   setBusy(true);
@@ -451,7 +451,6 @@ function restore(h) {
   input.value = h.source; syncInput();
   if (h.settings) {
     setSeg("tone", h.settings.tone); setSeg("strength", h.settings.strength);
-    if (h.settings.lang) $("lang").value = h.settings.lang;
     if (h.settings.locked) $("locked").value = h.settings.locked.join(", ");
   }
   setSeg("versions", String(Math.min(3, Math.max(1, h.versions.length))));
