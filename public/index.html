@@ -25,7 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="styles.css?v=202611080927">
+<link rel="stylesheet" href="styles.css?v=202611080935">
 </head>
 <body>
 
@@ -44,15 +44,6 @@
     </button>
   </nav>
 </header>
-
-<section class="keybar" id="keybar" hidden aria-label="Claude API key">
-  <p><b>Enter your Claude API key.</b> This page has no server, so rewrites use your own key. It goes straight from your browser to Anthropic. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a key</a></p>
-  <div class="keyform">
-    <input type="password" id="apikey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" aria-label="API key">
-    <label class="check-label"><input type="checkbox" id="remember"> Remember</label>
-    <button type="button" class="link-btn" id="forget">Forget</button>
-  </div>
-</section>
 
 <main class="app" id="top">
   <section class="sheet" aria-label="Your text">
@@ -81,11 +72,15 @@
     <div class="opts" id="opts" hidden>
       <label for="locked">Locked words stay exactly as written. Separate them with commas.</label>
       <input type="text" id="locked" value="Facebook, TikTok, Bangladesh" placeholder="e.g. brand names, technical terms, people">
-      <label for="sample">Match my style (optional). Paste a short piece you wrote yourself.</label>
-      <textarea id="sample" rows="3" maxlength="1500" placeholder="A paragraph or two in your own words"></textarea>
-      <span class="mono sample-count" id="sample-count">0 / 1500</span>
+      <label for="sample" class="ai-only">Match my style (optional). Paste a short piece you wrote yourself.</label>
+      <textarea id="sample" class="ai-only" rows="3" maxlength="1500" placeholder="A paragraph or two in your own words"></textarea>
+      <span class="mono sample-count ai-only" id="sample-count">0 / 1500</span>
     </div>
     <div class="settings" aria-label="Rewrite settings">
+      <div class="seg" role="group" aria-label="Engine" id="engine" hidden>
+        <button type="button" data-v="quick" aria-pressed="true" title="Rules that run in your browser. Free, instant, and your text never leaves your device.">Quick</button>
+        <button type="button" data-v="ai" aria-pressed="false" title="AI rewrite on our server. Changes ideas and structure, not just wording.">AI</button>
+      </div>
       <div class="seg" role="group" aria-label="Mode" id="strength">
         <button type="button" data-v="light" aria-pressed="false" data-desc="Fixes only the robotic parts" title="Fixes only the robotic parts"><i class="lvl" data-l="1" aria-hidden="true"></i>Light</button>
         <button type="button" data-v="medium" aria-pressed="true" data-desc="Rewrites sentences, keeps the structure" title="Rewrites sentences, keeps the structure"><i class="lvl" data-l="2" aria-hidden="true"></i>Balanced</button>
@@ -101,7 +96,7 @@
           <option value="blog">Blog</option>
         </select>
       </label>
-      <label class="select" title="What the text is for">
+      <label class="select ai-only" title="What the text is for">
         <span class="sr-only">What the text is for</span>
         <select id="purpose">
           <option value="general">General</option>
@@ -111,7 +106,7 @@
           <option value="social">Social post</option>
         </select>
       </label>
-      <label class="select" title="Output language">
+      <label class="select ai-only" title="Output language">
         <span class="sr-only">Output language</span>
         <select id="lang">
           <option value="same">Same as input</option>
@@ -187,10 +182,10 @@
       <p class="why" id="ai-signals" hidden></p>
     </div>
     <div class="stat">
-      <div class="stat-head"><span>Meaning kept</span><span class="pill idle" id="m-pill">—</span></div>
+      <div class="stat-head"><span id="m-title">Meaning kept</span><span class="pill idle" id="m-pill">—</span></div>
       <div class="stat-val ring-val">
-        <div class="ring" aria-hidden="true"><svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="26"/><circle class="val" id="m-ring" cx="32" cy="32" r="26" stroke-dasharray="163.4" stroke-dashoffset="163.4"/></svg></div>
-        <b id="m-num">—</b><span class="unit">/100</span>
+        <div class="ring" id="m-ring-box" aria-hidden="true"><svg viewBox="0 0 64 64"><circle class="track" cx="32" cy="32" r="26"/><circle class="val" id="m-ring" cx="32" cy="32" r="26" stroke-dasharray="163.4" stroke-dashoffset="163.4"/></svg></div>
+        <b id="m-num">—</b><span class="unit" id="m-unit">/100</span>
       </div>
       <p class="why" id="m-verdict" hidden></p>
       <div class="detail" id="m-detail"></div>
@@ -227,6 +222,6 @@
 
 <div class="toast" id="status" role="status" aria-live="polite"></div>
 
-<script type="module" src="app.js?v=202611080927"></script>
+<script type="module" src="app.js?v=202611080935"></script>
 </body>
 </html>

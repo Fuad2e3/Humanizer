@@ -254,3 +254,14 @@ export const SKIP = {
   "landscape": "Also a plain word for scenery; only phrases such as 'the digital landscape' are replaced.",
   "testament": "Also a religious and legal word; only 'a testament to' and its forms are replaced."
 };
+
+// Safe near-synonyms, used only to offer alternatives for a single sentence the visitor clicks.
+export const SIBLINGS = [
+  ["strong", "solid"], ["smooth", "easy"], ["careful", "thorough"], ["major", "big"], ["complete", "full"],
+  ["latest", "modern"], ["steady", "firm"], ["fast-changing", "changing"], ["impressive", "remarkable"],
+  ["carefully", "closely"], ["mixed blessing", "two-sided thing"]
+];
+export const OPENER_SIBLINGS = [
+  ["Also,", "Plus,", "On top of that,"], ["So,", "As a result,"], ["In the end,", "Finally,"],
+  ["In short,", "All in all,"], ["These days,", "Today,"], ["First,", "To start,"], ["Second,", "Next,"]
+];

@@ -1,8 +1,8 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { aiScore } from "./detect.js?v=202611080927";
-import { words, spread } from "./text.js?v=202611080927";
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES } from "./rules-data.js?v=202611080927";
+import { aiScore } from "./detect.js?v=202611080935";
+import { words, spread } from "./text.js?v=202611080935";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS } from "./rules-data.js?v=202611080935";
 
 const MARK = "";   // where something was deleted; tidy() cleans up around it
 const CAP = "";    // capitalize the next letter
@@ -295,12 +295,34 @@ export function humanizeLocal(text, { strength = "medium", tone = "natural", loc
   return { text: r.text, changes: r.changes, passes, score: r.score };
 }
 
-// Up to three different wordings of one sentence; fewer when the rules find nothing to change.
-export function sentenceOptionsLocal(sentence, { tone = "natural", locked = [] } = {}) {
-  const found = [];
-  for (let seed = 1; seed <= 12 && found.length < 3; seed++) {
-    const t = runOnce(sentence, { strength: "strong", tone, locked, seed }).text.trim();
-    if (t !== sentence.trim() && !found.includes(t)) found.push(t);
+// Small, safe changes to a sentence that is already clean: another linking word, a near-synonym,
+// or a contraction written out (or made). Used only for the sentence alternatives.
+const EXPAND = new Map(CONTRACTIONS.map(([full, short]) => [short.toLowerCase(), full]));
+function variations(sentence, locked) {
+  const p = protect(sentence, locked), t = p.text, out = [];
+  const lead = t.match(/^\s*/)[0], body = t.slice(lead.length);
+  for (const group of OPENER_SIBLINGS) {
+    const hit = group.find((o) => body.startsWith(o + " "));
+    if (hit) for (const o of group) if (o !== hit) out.push(lead + o + body.slice(hit.length));
   }
+  for (const group of SIBLINGS) {
+    for (const w of group) {
+      const re = new RegExp(`(?<![${L}'’])${esc(w)}(?![${L}])`, "iu");
+      if (re.test(t)) for (const o of group) if (o !== w) out.push(t.replace(re, (m) => matchCase(m, o)));
+    }
+  }
+  const short = t.match(new RegExp(`(?<![${L}])(${[...EXPAND.keys()].map(esc).join("|")})(?![${L}])`, "iu"));
+  if (short) out.push(t.replace(short[0], matchCase(short[0], EXPAND.get(short[0].toLowerCase()))));
+  else { const c = contract(t); if (c.changes.length) out.push(c.text); }
+  return out.map(p.restore);
+}
+
+// Up to three different wordings of one sentence: first the full rules with different seeds, then the
+// small variations above. Fewer, or none, when there is nothing safe to change.
+export function sentenceOptionsLocal(sentence, { tone = "natural", locked = [] } = {}) {
+  const found = [], s = sentence.trim();
+  const add = (t) => { t = t.trim(); if (t && t !== s && !found.includes(t)) found.push(t); };
+  for (let seed = 1; seed <= 12 && found.length < 3; seed++) add(runOnce(sentence, { strength: "strong", tone, locked, seed }).text);
+  for (const t of variations(sentence, locked)) if (found.length < 3) add(t);
   return found;
 }

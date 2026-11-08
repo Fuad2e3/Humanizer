@@ -260,3 +260,15 @@ test("sentence options", () => {
   assert.equal(new Set(opts).size, opts.length);
   assert.ok(!opts.includes(s));
 });
+
+test("sentence options exist for an already clean sentence", () => {
+  const s = "Also, it's key to draw on solid tools.";
+  const opts = sentenceOptionsLocal(s);
+  assert.ok(opts.length >= 2, JSON.stringify(opts));
+  assert.ok(!opts.includes(s));
+  assert.equal(new Set(opts).size, opts.length);
+});
+
+test("a sentence with nothing to vary has no options", () => {
+  assert.deepEqual(sentenceOptionsLocal("Rahim went home."), []);
+});
