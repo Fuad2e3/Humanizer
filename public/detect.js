@@ -3,6 +3,11 @@
 import { findAI, sentences, words, spread } from "./text.js?v=202611080815";
 
 export const MIN_WORDS = 40;
+// A version whose score is above the threshold is rewritten once more with feedback.
+export const RETRY_THRESHOLD = 45;
+export const MAX_RETRIES = 1;
+
+export const shouldRetry = (result, attempt) => Boolean(result) && result.score > RETRY_THRESHOLD && attempt < MAX_RETRIES;
 
 const STARTERS = /^(moreover|furthermore|additionally|in addition|however|overall|ultimately|firstly|secondly|lastly|in conclusion|in summary|notably|importantly|consequently|therefore|thus)\b/i;
 const BN_STARTERS = /^(তাছাড়া|অধিকন্তু|সুতরাং|পরিশেষে|সর্বোপরি|অতএব|এছাড়াও)(?=[\s,]|$)/;
