@@ -474,3 +474,57 @@ a.nav-btn { text-decoration: none; color: var(--ink) }
   .sheet-foot .actions .btn { width: 100%; padding: 0 10px }
   .sheet-foot .actions .btn[hidden] { display: none }
 }
+
+/* ---- Site polish v1 ---- */
+/* One content width for every page */
+:root { --page-w: 1080px }
+.page { max-width: var(--page-w); gap: 56px }
+.page-section h2 { margin: 0 0 16px; font-size: clamp(20px, 2.6vw, 24px); font-weight: 650; letter-spacing: -0.02em }
+.faq { max-width: none }
+.faq details p { max-width: 72ch }
+
+/* Tool page headline: one quiet line, so the tool stays the hero */
+.tool-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; padding: 18px max(20px, env(safe-area-inset-right, 0px)) 14px max(20px, env(safe-area-inset-left, 0px)) }
+.tool-head h1 { margin: 0; font-size: clamp(20px, 2.2vw, 24px); font-weight: 650; letter-spacing: -0.025em; line-height: 1.2 }
+.tool-head p { margin: 0; font-size: 14px; color: var(--muted) }
+/* Shorter sheets, so the report starts on the first screen */
+.sheet { height: clamp(400px, calc(100dvh - 56px - 64px - 150px), 640px) }
+@media (max-width: 1180px) { .sheet { height: 500px } }
+@media (max-width: 860px) { .sheet { height: auto } .tool-head { padding-top: 14px } .tool-head p { font-size: 13.5px } }
+
+/* Phone menu: Features, Pricing and FAQ live behind one button */
+.nav-menu { position: relative; display: none }
+.nav-menu summary { list-style: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer }
+.nav-menu summary::-webkit-details-marker { display: none }
+.nav-menu[open] summary { border-color: var(--line-strong) }
+.nav-menu-list { position: absolute; right: 0; top: calc(100% + 8px); z-index: 10; min-width: 180px; display: grid; padding: 6px; border-radius: 12px; background: var(--paper); border: 1px solid var(--line-strong); box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .35); animation: pop .15s var(--ease) }
+.nav-menu-list a { color: var(--ink) !important; padding: 9px 12px !important; font-size: 14.5px !important }
+@media (max-width: 640px) { .nav-menu { display: block } .nav-links { gap: 8px } }
+
+/* Footer on every page */
+.site-foot { border-top: 1px solid var(--line); margin-top: 24px }
+.site-foot-in { max-width: var(--page-w); margin: 0 auto; padding: 28px max(20px, env(safe-area-inset-right, 0px)) 36px max(20px, env(safe-area-inset-left, 0px));
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 32px; align-items: start }
+.foot-brand { display: grid; gap: 8px; max-width: 420px }
+.foot-brand .brand { font-size: 14px }
+.foot-brand .logo { width: 22px; height: 22px; border-radius: 6px }
+.foot-brand p { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.55 }
+.foot-links { display: flex; flex-wrap: wrap; gap: 4px 18px }
+.foot-links a { color: var(--muted); text-decoration: none; font-size: 13.5px }
+.foot-links a:hover { color: var(--ink) }
+.foot-copy { grid-column: 1 / -1; margin: 0; font-size: 12.5px; color: var(--faint) }
+@media (max-width: 640px) { .site-foot-in { grid-template-columns: minmax(0, 1fr) } }
+body:has(main.app) .site-foot-in { max-width: none }
+
+/* Features: a 3 x 3 grid of even cards */
+.feature-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+@media (max-width: 900px) { .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+@media (max-width: 560px) { .feature-grid { grid-template-columns: minmax(0, 1fr) } }
+.feature-card p { margin: 0 }
+
+/* Pricing in the shared page layout */
+.pricing-body { display: grid }
+.plans { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+@media (max-width: 860px) { .plans { grid-template-columns: minmax(0, 1fr) } }
+.plan-btn.soon, .plan-btn.soon:disabled { opacity: 1; background: transparent; border: 1px dashed var(--line-strong); color: var(--faint); cursor: not-allowed; box-shadow: none }
+.plan ul { align-content: start }
