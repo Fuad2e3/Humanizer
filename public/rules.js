@@ -1,8 +1,8 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { aiScore } from "./detect.js?v=202611090836";
-import { words, spread } from "./text.js?v=202611090836";
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611090836";
+import { aiScore } from "./detect.js?v=202611090845";
+import { words, spread } from "./text.js?v=202611090845";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611090845";
 
 // Private-use characters mark spots in the text while the passes run; none survive to the output.
 const ch = (n) => String.fromCharCode(n);
@@ -114,6 +114,16 @@ const STARTERS_SAFE = new Set(["in", "on", "at", "for", "from", "by", "with", "a
   "overall", "notably", "importantly", "consequently", "thus", "firstly", "secondly", "lastly", "indeed", "meanwhile", "therefore",
   "although", "while", "when", "if", "because", "as", "here", "there", "this", "these", "those", "many", "most", "some", "every", "each"]);
 
+// True when `word` appears in `text` as a whole word (both lower-cased by the caller).
+const LETTER = /[\p{L}\p{M}\p{N}]/u;
+function hasWord(text, word) {
+  if (!word) return false;
+  for (let i = text.indexOf(word); i !== -1; i = text.indexOf(word, i + 1)) {
+    if (!LETTER.test(text[i - 1] || " ") && !LETTER.test(text[i + word.length] || " ")) return true;
+  }
+  return false;
+}
+
 // ---------- Table passes ----------
 const cache = new WeakMap();
 function compiled(rows) {
@@ -152,7 +162,11 @@ function applyTable(text, rows, pick, type) {
   const changes = [];
   const out = text.replace(re, (m, off, s) => {
     if (looksLikeName(m, off, s)) return m;
-    const to = pick(map.get(norm(m)), norm(m));
+    // Prefer a replacement whose main word is not already used nearby ("improve ... and improve").
+    const near = s.slice(Math.max(0, off - 90), off + m.length + 90).toLowerCase();
+    const all = map.get(norm(m));
+    const fresh = all.filter((o) => !o || !hasWord(near, o.split(/\s+/)[0].toLowerCase()));
+    const to = pick(fresh.length ? fresh : all, norm(m));
     if (to === null) return m;
     changes.push({ type, from: m, to });
     return matchCase(m, to);
@@ -295,6 +309,7 @@ export function splitLong(text, pick, tone = "natural", { flat = false } = {}) {
       for (const m of s.matchAll(conj)) {
         const rest = s.slice(m.index + m[0].length);
         if (!startsClause(rest)) continue;                                       // "so that", "and found", "but also"
+        if (/\bnot only\b/i.test(s.slice(0, m.index)) || /^(?:\S+[ \t]+)?also\b/i.test(rest)) continue;  // "not only ... but (it) also"
         if (m[1] && m[1].toLowerCase() === "and" && s.slice(0, m.index).includes(",")) continue;   // end of a list
         const left = words(s.slice(0, m.index)), right = words(rest);
         if (!best || Math.abs(left - right) < Math.abs(best.left - best.right)) best = { m, left, right };
@@ -343,7 +358,7 @@ export function mergeShort(text, pick, { flat = false } = {}) {
 // "... লাগে। সবার ..."). Dropping the repeated subject is normal in Bangla. The word before "এবং" must
 // look like a finished verb, and a list ("ক, খ এবং গ") is left alone. Nothing is added or dropped but "এবং".
 const BN_SENTENCES = /[^।!?\n]+(?:[।!?]+["'”’)\]]*|$)[ \t]*/gu;
-const BN_VERB_END = /(?:ছে|ছেন|ছিল|ছিলেন|হয়|হয়|যায়|যায়|পারে|লাগে|করে|দেয়|দেয়|থাকে|রাখে|বে|বেন|লাম|লেন|লো|ল|ত|তেন)$/u;
+const BN_VERB_END = /(?:পারি|করি|যাই|থাকি|চাই|দিই|ছি|ছে|ছেন|ছিল|ছিলেন|হয়|হয়|যায়|যায়|পারে|লাগে|করে|দেয়|দেয়|থাকে|রাখে|বে|বেন|লাম|লেন|লো|ল|ত|তেন)$/u;
 const bnWords = (s) => (s.match(/[\p{L}\p{M}\p{N}]+/gu) || []).length;
 export function splitBangla(text, { flat = false } = {}) {
   return perParagraph(text, (p, changes) => {
@@ -392,6 +407,79 @@ export function splitRelative(text, tone = "natural") {
   }).join(""));
 }
 
+// Joins a sentence to the one before when it starts with a linking word that means "and", "so" or
+// "but": "...a wide audience. Also, brands can..." -> "...a wide audience, and brands can...". This makes
+// one long sentence among shorter ones, the way people write, without changing what is said. The pair
+// whose join varies the paragraph most is picked; names and "I" keep their capital letter.
+const LINKS = [[/^(?:Also|Plus|On top of that|In addition),[ \t]+/u, "and"], [/^And[ \t]+/u, "and"],
+  [/^(?:So|As a result|That's why),[ \t]+/u, "so"], [/^So[ \t]+/u, "so"],
+  [/^(?:Still|Even so|However|Yet),[ \t]+/u, "but"], [/^But[ \t]+/u, "but"],
+  // A sentence that points back with "This", "These", "It" or "They" also joins with "and".
+  [/^(?=(?:This|These|It|They)[ \t])/u, "and"]];
+export function mergeLinked(text, tone = "natural") {
+  const formal = tone === "formal" || tone === "academic";
+  return perParagraph(text, (p, changes) => {
+    const ss = sentencesOf(p);
+    const lower = p.toLowerCase();
+    let names = null;
+    const nameStarts = () => (names ??= new Set(findNames(p).map((n) => n.split(/\s+/)[0])));
+    let best = null;
+    for (let i = 0; i + 1 < ss.length; i++) {
+      const cur = ss[i], next = ss[i + 1].trimStart();
+      // Skip a sentence that already joins two clauses (", and they..."); a list (", and lean proteins") is fine.
+      const joinedAlready = [...cur.matchAll(/,\s+(?:and|but|so)\s+/gi)].some((m) => SUBJECT.test(cur.slice(m.index + m[0].length)));
+      if (!isLatin(cur) || !isLatin(next) || !/[^.]\.[ \t]*$/.test(cur) || joinedAlready) continue;
+      const link = LINKS.find(([re]) => re.test(next));
+      if (!link || (formal && link[1] !== "but" && link[1] !== "so")) continue;
+      const rest = next.replace(link[0], "");
+      const a = words(cur), b = words(rest);
+      if (a < 5 || b < 4 || a + b > 42) continue;
+      // The first word loses its capital, so it must clearly be an ordinary word, never a name.
+      const first = (rest.match(/^[\p{L}'’-]+/u) || [""])[0];
+      const named = first === "I" || /^\p{Lu}{2,}/u.test(first) || /^\p{Ll}+\p{Lu}/u.test(first) || nameStarts().has(first);
+      const ordinary = !named && (SUBJECT.test(rest) || hasWord(lower, first.toLowerCase()));
+      if (!ordinary && !named) continue;
+      const lens = ss.map(words); lens.splice(i, 2, a + b);
+      const sp = spread(lens.filter(Boolean));
+      if (!best || sp > best.sp) best = { i, rest, word: link[1], sp };
+    }
+    if (!best) return p;
+    const { i, rest, word } = best;
+    const first = (rest.match(/^[\p{L}'’-]+/u) || [""])[0];
+    const keepCap = first === "I" || /^\p{Lu}{2,}/u.test(first) || /^\p{Ll}+\p{Lu}/u.test(first) || nameStarts().has(first);
+    const joined = ss[i].trimEnd().replace(/\.$/, "") + ", " + word + " " + (keepCap ? rest : lowerFirst(rest));
+    changes.push({ type: "merge", from: ".", to: ", " + word });
+    return [...ss.slice(0, i), joined, ...ss.slice(i + 2)].join("");
+  });
+}
+
+// The tacked-on "-ing" tail is a typical AI habit: "..., allowing them to focus" -> ". That lets them
+// focus"; "..., helping to reduce" -> ". That helps reduce"; "..., leading to" -> ". That leads to".
+// The new sentence says the same thing, so the meaning stays; both halves need a few words.
+const TAILS = [
+  [/,[ \t]+allowing[ \t]+(them|us|you|people|users|teams|students|businesses|companies)[ \t]+to[ \t]+/iu, (m, who) => `. That lets ${who.toLowerCase()} `],
+  [/,[ \t]+enabling[ \t]+(them|us|you|people|users|teams|students|businesses|companies)[ \t]+to[ \t]+/iu, (m, who) => `. That lets ${who.toLowerCase()} `],
+  [/,[ \t]+helping[ \t]+(?:to[ \t]+)?/iu, () => ". That helps "],
+  [/,[ \t]+leading[ \t]+to[ \t]+/iu, () => ". That leads to "],
+  [/,[ \t]+resulting[ \t]+in[ \t]+/iu, () => ". That results in "],
+  [/,[ \t]+making[ \t]+it[ \t]+/iu, () => ". That makes it "],
+  [/,[ \t]+which[ \t]+(?:helps|allows|lets)[ \t]+/iu, () => ". That helps "]
+];
+export function splitTails(text) {
+  return perParagraph(text, (p, changes) => sentencesOf(p).map((s) => {
+    if (!isLatin(s)) return s;
+    for (const [re, to] of TAILS) {
+      const m = s.match(re);
+      if (!m) continue;
+      const left = words(s.slice(0, m.index)), right = words(s.slice(m.index + m[0].length));
+      if (left < 5 || right < 2) continue;
+      changes.push({ type: "split", from: m[0].replace(/^,/, "").trim(), to: to(...m).trim() });
+      return s.slice(0, m.index) + to(...m) + s.slice(m.index + m[0].length);
+    }
+    return s;
+  }).join(""));
+}
+
 // Varies sentence length: splits then merges, more freely when every sentence is about the same length.
 export function rhythm(text, pick, tone = "natural") {
   const changes = [];
@@ -408,11 +496,22 @@ export function rhythm(text, pick, tone = "natural") {
     const b = mergeShort(a.text, pick, { flat });
     changes.push(...a.changes, ...b.changes);
     if (!flat || !isFlat(b.text)) return b.text;
-    // Still flat: split where "that"/"which" starts a clause, after the merge so it is not joined back.
-    const rel = splitRelative(b.text, tone);
+    // Still flat: split off "-ing" tails and "that"/"which" clauses, after the merge so they are not joined back.
+    const tails = splitTails(b.text);
+    changes.push(...tails.changes);
+    if (!isFlat(tails.text)) return tails.text;
+    const rel = splitRelative(tails.text, tone);
     changes.push(...rel.changes);
     if (!isFlat(rel.text)) return rel.text;
     b.text = rel.text;
+    // Still flat: join at a linking word ("Also," -> ", and"), up to twice.
+    for (let k = 0; k < 2 && isFlat(b.text); k++) {
+      const m = mergeLinked(b.text, tone);
+      if (!m.changes.length) break;
+      changes.push(...m.changes);
+      b.text = m.text;
+    }
+    if (!isFlat(b.text)) return b.text;
     // Still flat: split wherever it is allowed, without the coin flip. "formal" leaves out "and",
     // so the ", and" a merge just added is not split again.
     const c = splitLong(b.text, (o) => (o.includes(true) ? true : pick(o)), "formal", { flat: true });
@@ -424,18 +523,19 @@ export function rhythm(text, pick, tone = "natural") {
 
 // ---------- The engine ----------
 const LEVELS = ["light", "medium", "strong"];
-const TARGET = 30;   // stop once the pattern score is at or below this
+const TARGET = 20;   // stop once the pattern score is at or below this
 
 // One rewrite with one seed: light = phrases and words; medium adds openers, contractions and dashes;
 // strong adds sentence rhythm.
-function runOnce(text, { strength, tone, locked = [], seed }) {
+function runOnce(text, { strength, tone, locked = [], seed, names = findNames(text) }) {
   const pick = tonePick(makePick(rng(seed)), tone);
-  const p = protect(text, [...locked, ...findNames(text)]);
+  const p = protect(text, [...locked, ...names]);
   const level = LEVELS.indexOf(strength);
   const changes = [];
   let t = p.text;
   const step = (r) => { t = r.text; changes.push(...r.changes); };
-  if (level >= 1) step(dropOpeners(t, pick, tone));
+  // Deep keeps a linking word ("Moreover," -> "Also,") instead of deleting it, so rhythm can join there.
+  if (level >= 1) step(dropOpeners(t, level >= 2 ? (o, k) => pick(o.length > 1 ? o.filter((x) => x !== "") : o, k) : pick, tone));
   step(replacePhrases(t, pick));
   step(swapWords(t, pick));
   step(fixArticles(t, changes));
@@ -448,11 +548,12 @@ function runOnce(text, { strength, tone, locked = [], seed }) {
   return { text: p.restore(t), changes };
 }
 
-// Tries several seeds (three, or five in Deep mode) and keeps the lowest pattern score (ties: fewer changes).
+// Tries several seeds (three, or up to five in Deep mode) and keeps the lowest pattern score (ties: fewer changes).
 function bestOf(text, opts) {
   let best = null;
-  const tries = opts.strength === "strong" ? 5 : 3;
-  for (let k = 0; k < tries; k++) {
+  // Deep tries two more seeds only when the first three still score above the target.
+  for (let k = 0; k < 5; k++) {
+    if (k === 3 && (opts.strength !== "strong" || (best.score ? best.score.score : 0) <= TARGET)) break;
     const seed = opts.seed + 100 * k;
     const r = runOnce(text, { ...opts, seed });
     r.score = aiScore(r.text);
@@ -465,11 +566,12 @@ function bestOf(text, opts) {
 // Rewrites text with the rules. If the score is still above the target, runs once more one level stronger.
 export function humanizeLocal(text, { strength = "medium", tone = "natural", locked = [], seed = 1 } = {}) {
   const level = Math.max(0, LEVELS.indexOf(strength));
-  let r = bestOf(text, { strength: LEVELS[level], tone, locked, seed });
+  const names = findNames(text);   // found once, used by every try
+  let r = bestOf(text, { strength: LEVELS[level], tone, locked, seed, names });
   let passes = 1;
   if (r.score && r.score.score > TARGET && level < LEVELS.length - 1) {
     passes = 2;
-    const r2 = bestOf(text, { strength: LEVELS[level + 1], tone, locked, seed });
+    const r2 = bestOf(text, { strength: LEVELS[level + 1], tone, locked, seed, names });
     if (r2.score && r2.score.score <= r.score.score) r = r2;
   }
   return { text: r.text, changes: r.changes, passes, score: r.score };

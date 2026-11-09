@@ -8,7 +8,8 @@
     "start": "node --env-file-if-exists=.env server.js",
     "bump": "node scripts/bump-version.mjs",
     "test": "node --test \"tests/*.test.mjs\"",
-    "build:pdf": "node scripts/copy-pdfjs.mjs"
+    "build:pdf": "node scripts/copy-pdfjs.mjs",
+    "bench": "node scripts/bench.mjs"
   },
   "engines": {
     "node": ">=22"

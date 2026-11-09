@@ -13,7 +13,7 @@ There are two engines:
 |---|---|
 | Quick engine | Replaces stock AI phrases ("plays a vital role in", "it is important to note that") and stiff words (utilize, leverage, robust), shortens wordy phrases (in order to, due to the fact that), drops or swaps filler openers (Moreover, However, Indeed), cuts empty lead-ins ("it is clear that"), adds contractions and splits or joins sentences so their length varies. Over 500 rules. Covers Bangla too: about 55 stock phrases, and long sentences split at "এবং" in Deep mode |
 | AI pattern score | Shows how AI-like the text looks before and after, on a meter, and explains why. It is computed in the browser from writing patterns, so detectors such as GPTZero or Turnitin may score differently |
-| Second pass | Quick: if the score is still above 30, the rules run once more one level stronger. AI: if the score is above 45, Claude rewrites once more with fixes for what the score found. The lower score is kept |
+| Second pass | Quick: if the score is still above 20, the rules run once more one level stronger. AI: if the score is above 45, Claude rewrites once more with fixes for what the score found. The lower score is kept |
 | 3 modes | Light (phrases and words), Balanced (also openers, contractions and dashes), Deep (also sentence rhythm, in English and Bangla) |
 | Up to 3 versions | One click gives 1 to 3 different rewrites, each with its own score. Quick mode picks the best of three tries for each version (five in Deep mode) |
 | Word limit | 3,000 words at a time in Quick mode. 500 per AI rewrite (set with `FREE_WORD_LIMIT`) |
@@ -31,6 +31,12 @@ No hidden characters, look-alike letters or deliberate typos are ever added. Det
 
 - **Pricing:** Pro and Team show a "Coming soon" button. Payments and user accounts are not built yet. Prices are in US dollars; change them in `public/pricing.html`.
 - **Your own domain:** the canonical links, share tags, `robots.txt` and `sitemap.xml` point to `https://fuad2e3.github.io/Humanizer/public/`. When you move to your own domain, replace that address in `public/*.html`, `public/robots.txt` and `public/sitemap.xml`.
+
+### Measuring the Quick engine
+
+`npm run bench` runs the engine over 16 typical AI-written English paragraphs, 3 Bangla ones and 3 human-written texts (in `tests/bench/corpus.mjs`). It prints the average pattern score before and after for each mode, the signals still left, and how much human text changed. The test suite fails if Deep mode averages above 18 for English or 20 for Bangla, or if human text changes by more than 5%. Use it to check that a new rule really helps before keeping it.
+
+Current results: English 63 → 16 (Deep) and 17 (Balanced); Bangla 73 → 17; human text at most 3% changed.
 
 ## Where to run it
 
