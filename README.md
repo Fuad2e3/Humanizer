@@ -17,7 +17,7 @@ There are two engines:
 | 3 modes | Light (phrases and words), Balanced (also openers, contractions and dashes), Deep (also sentence rhythm, in English and Bangla) |
 | Up to 3 versions | One click gives 1 to 3 different rewrites, each with its own score. Quick mode picks the best of three tries for each version (five in Deep mode) |
 | Word limit | 3,000 words at a time in Quick mode. 500 per AI rewrite (set with `FREE_WORD_LIMIT`) |
-| Protected text | Numbers, locked words, links, email addresses, @mentions, #hashtags and quoted text are never changed |
+| Protected text | Numbers, names, links, email addresses, @mentions, #hashtags and quoted text are never changed. Names are found automatically: brands with a capital inside (TikTok, iPhone), acronyms (AI, NASA), capitalized words mid-sentence (Facebook) and multi-word names (Bank of America) |
 | File upload | .txt, .md, Word (.docx) and PDF files, by button or drag and drop. Files are read in the browser. Scanned PDFs without a text layer are not supported |
 | Word download | Save the result as a .docx file |
 | History | The last 30 rewrites are saved in the browser and can be reopened, copied or deleted |
@@ -66,7 +66,7 @@ Open http://localhost:3000
 
 `public/rules.js` runs these passes in order (`public/rules-data.js` holds the tables):
 
-1. **Protect** numbers, locked words, links, emails, @mentions, #hashtags and quoted text by swapping them for placeholders.
+1. **Protect** numbers, names (found automatically), links, emails, @mentions, #hashtags and quoted text by swapping them for placeholders.
 2. **Openers:** drop or replace "Moreover,", "Furthermore," and similar at the start of a sentence (Balanced and Deep).
 3. **Phrases:** replace stock AI phrases, in English and Bangla.
 4. **Words:** shorten wordy phrases and swap stiff words, with every verb form ("leverages", "leveraged").
