@@ -1,8 +1,8 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { aiScore } from "./detect.js?v=202611080954";
-import { words, spread } from "./text.js?v=202611080954";
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611080954";
+import { aiScore } from "./detect.js?v=202611090749";
+import { words, spread } from "./text.js?v=202611090749";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611090749";
 
 // Private-use characters mark spots in the text while the passes run; none survive to the output.
 const ch = (n) => String.fromCharCode(n);
@@ -177,7 +177,7 @@ export function contract(text) {
   const changes = [];
   const out = text.replace(CONTRACT_RE, (m) => {
     const short = CONTRACT_MAP.get(m.toLowerCase());
-    const to = short === "I'm" ? short : matchCase(m, short);
+    const to = short.startsWith("I'") ? short : matchCase(m, short);
     changes.push({ type: "contraction", from: m, to });
     return to;
   });
@@ -304,11 +304,49 @@ export function mergeShort(text, pick, { flat = false } = {}) {
   });
 }
 
+// Bangla: a long sentence that joins two full clauses with "এবং" splits in two ("... লাগে এবং সবার ..." ->
+// "... লাগে। সবার ..."). Dropping the repeated subject is normal in Bangla. The word before "এবং" must
+// look like a finished verb, and a list ("ক, খ এবং গ") is left alone. Nothing is added or dropped but "এবং".
+const BN_SENTENCES = /[^।!?\n]+(?:[।!?]+["'”’)\]]*|$)[ \t]*/gu;
+const BN_VERB_END = /(?:ছে|ছেন|ছিল|ছিলেন|হয়|হয়|যায়|যায়|পারে|লাগে|করে|দেয়|দেয়|থাকে|রাখে|বে|বেন|লাম|লেন|লো|ল|ত|তেন)$/u;
+const bnWords = (s) => (s.match(/[\p{L}\p{M}\p{N}]+/gu) || []).length;
+export function splitBangla(text, { flat = false } = {}) {
+  return perParagraph(text, (p, changes) => {
+    let since = 2;
+    return (p.match(BN_SENTENCES) || [p]).map((s) => {
+      since++;
+      if (isLatin(s) || !/।/.test(s)) return s;
+      const len = bnWords(s);
+      if (len < (flat ? 9 : 16) || since < 2) return s;
+      let best = null;
+      for (const m of s.matchAll(/[ \t]+এবং[ \t]+/gu)) {
+        const left = s.slice(0, m.index), right = s.slice(m.index + m[0].length);
+        if (/[,،]/.test(left)) continue;
+        const lastWord = (left.match(/[\p{L}\p{M}]+$/u) || [""])[0];
+        if (!BN_VERB_END.test(lastWord)) continue;
+        const l = bnWords(left), r = bnWords(right);
+        if (l < 4 || r < 3) continue;
+        if (!best || Math.abs(l - r) < Math.abs(best.l - best.r)) best = { m, l, r };
+      }
+      if (!best) return s;
+      since = 0;
+      changes.push({ type: "split", from: "এবং", to: "।" });
+      return s.slice(0, best.m.index) + "। " + s.slice(best.m.index + best.m[0].length);
+    }).join("");
+  });
+}
+
 // Varies sentence length: splits then merges, more freely when every sentence is about the same length.
 export function rhythm(text, pick, tone = "natural") {
   const changes = [];
   const out = text.split(/(\n+)/).map((p, i) => {
     if (i % 2) return p;
+    if (!isLatin(p)) {
+      const lens = (p.match(BN_SENTENCES) || []).map(bnWords).filter(Boolean);
+      const r = splitBangla(p, { flat: lens.length >= 3 && spread(lens) < 0.45 });
+      changes.push(...r.changes);
+      return r.text;
+    }
     const flat = isFlat(p);
     const a = splitLong(p, pick, tone, { flat });
     const b = mergeShort(a.text, pick, { flat });
@@ -349,10 +387,12 @@ function runOnce(text, { strength, tone, locked, seed }) {
   return { text: p.restore(t), changes };
 }
 
-// Tries three seeds and keeps the lowest pattern score (ties: fewer changes).
+// Tries several seeds (three, or five in Deep mode) and keeps the lowest pattern score (ties: fewer changes).
 function bestOf(text, opts) {
   let best = null;
-  for (const seed of [opts.seed, opts.seed + 100, opts.seed + 200]) {
+  const tries = opts.strength === "strong" ? 5 : 3;
+  for (let k = 0; k < tries; k++) {
+    const seed = opts.seed + 100 * k;
     const r = runOnce(text, { ...opts, seed });
     r.score = aiScore(r.text);
     const s = r.score ? r.score.score : 0, b = best && (best.score ? best.score.score : 0);

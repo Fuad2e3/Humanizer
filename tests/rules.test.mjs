@@ -272,3 +272,44 @@ test("sentence options exist for an already clean sentence", () => {
 test("a sentence with nothing to vary has no options", () => {
   assert.deepEqual(sentenceOptionsLocal("Rahim went home."), []);
 });
+
+// ---------- Stronger engine ----------
+import { splitBangla } from "../public/rules.js";
+
+test("new stock phrases and words are replaced", () => {
+  const r = (t) => tidy(swapWords(replacePhrases(t, first).text, first).text).text;
+  assert.equal(r("AI is revolutionizing medicine."), "AI is changing medicine.");
+  assert.equal(r("It is essential to strike a balance between speed and care."), "You need to balance speed and care.");
+  assert.equal(r("The tool reads vast amounts of data in a matter of seconds."), "The tool reads huge amounts of data in seconds.");
+  assert.equal(r("It is clear that the plan works."), "The plan works.");
+});
+
+test("new linking words are handled at the start of a sentence", () => {
+  assert.equal(tidy(dropOpeners("However, the plan works.", first).text).text, "Still, the plan works.");
+  assert.equal(tidy(dropOpeners("Indeed, the plan works.", none).text).text, "The plan works.");
+  assert.equal(dropOpeners("However hard we try, it fails.", first).text, "However hard we try, it fails.");
+});
+
+test("more contractions, but never 'let us' or a clause end", () => {
+  assert.equal(contract("I will go and they have not called.").text, "I'll go and they haven't called.");
+  assert.equal(contract("Let us know.").text, "Let us know.");
+  assert.equal(contract("That is who he is.").text, "That's who he is.");
+});
+
+test("a long Bangla sentence splits at এবং between two clauses", () => {
+  const s = "ছাত্র এবং শিক্ষক দুজনেই আজকের সভায় উপস্থিত ছিলেন এবং সবাই নতুন নিয়ম নিয়ে অনেক কথা বললেন সেখানে বসে।";
+  assert.equal(splitBangla(s).text, "ছাত্র এবং শিক্ষক দুজনেই আজকের সভায় উপস্থিত ছিলেন। সবাই নতুন নিয়ম নিয়ে অনেক কথা বললেন সেখানে বসে।");
+});
+
+test("a Bangla list is never split", () => {
+  const s = "আমি ভাত, ডাল এবং মাছ খেয়েছি আজ দুপুরে বাড়িতে বসে মায়ের সাথে অনেক গল্প করতে করতে।";
+  assert.equal(splitBangla(s, { flat: true }).text, s);
+});
+
+test("Deep mode breaks up flat Bangla", () => {
+  const before = aiScore(STOCK_AI_BN).score;
+  const r = humanizeLocal(STOCK_AI_BN, { strength: "strong" });
+  assert.ok(r.score.score <= 25, `score ${r.score.score}`);
+  assert.ok(r.changes.some((c) => c.type === "split"), "no Bangla split");
+  assert.ok(before - r.score.score >= 50, `${before} -> ${r.score.score}`);
+});

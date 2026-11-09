@@ -121,7 +121,61 @@ export const PHRASES = [
   ["harness the", ["use the"]],
   ["harness its", ["use its"]],
   ["harness their", ["use their"]],
-  ["unlock the potential of", ["make the most of"]]
+  ["unlock the potential of", ["make the most of"]],
+  ["it is essential to", ["you need to", "it's key to"]],
+  ["it's essential to", ["you need to", "it's key to"]],
+  ["it is crucial to", ["you need to", "it's key to"]],
+  ["it's crucial to", ["you need to", "it's key to"]],
+  ["it is imperative to", ["you must"]],
+  ["it is imperative that", [""]],
+  ["strike a balance between", ["balance"]],
+  ["strike a balance", ["find a balance"]],
+  ["vast amounts of", ["huge amounts of", "loads of"]],
+  ["a vast amount of", ["a huge amount of", "loads of"]],
+  ["in a matter of seconds", ["in seconds"]],
+  ["in a matter of minutes", ["in minutes"]],
+  ["in a matter of hours", ["in hours"]],
+  ["in a matter of days", ["in days", "within days"]],
+  ["in a matter of weeks", ["in weeks", "within weeks"]],
+  ["by doing so,", ["That way,", "This way,"]],
+  ["when it comes to", ["for"]],
+  ["a significant impact on", ["a big effect on", "a real effect on"]],
+  ["a profound impact on", ["a deep effect on", "a big effect on"]],
+  ["has the potential to", ["could", "might"]],
+  ["have the potential to", ["could", "might"]],
+  ["continues to evolve", ["keeps changing"]],
+  ["continue to evolve", ["keep changing"]],
+  ["remains a major concern", ["is still a big worry"]],
+  ["remains a significant concern", ["is still a big worry"]],
+  ["one of the most important", ["one of the biggest", "one of the key"]],
+  ["a key role in", ["a big part in"]],
+  ["an integral part of", ["a key part of", "a core part of"]],
+  ["integral part of", ["key part of"]],
+  ["in the digital era", ["today"]],
+  ["in the modern era", ["today", "now"]],
+  ["in recent years,", ["Lately,", "Over the last few years,"]],
+  ["in recent years", ["lately", "over the last few years"]],
+  ["a crucial aspect of", ["a key part of"]],
+  ["an essential aspect of", ["a key part of"]],
+  ["an important aspect of", ["a big part of"]],
+  ["various aspects of", ["many parts of", "different sides of"]],
+  ["the importance of", ["the value of"]],
+  ["is revolutionizing", ["is changing", "is reshaping"]],
+  ["are revolutionizing", ["are changing", "are reshaping"]],
+  ["revolutionized", ["changed", "reshaped"]],
+  ["revolutionize", ["change", "reshape"]],
+  ["revolutionizes", ["changes", "reshapes"]],
+  ["whether you're a", ["if you're a"]],
+  ["whether you are a", ["if you're a"]],
+  ["take it to the next level", ["make it better"]],
+  ["to the next level", ["further"]],
+  ["in the world of", ["in"]],
+  ["an array of", ["a range of", "lots of"]],
+  ["a diverse range of", ["many different", "all sorts of"]],
+  ["a deeper understanding of", ["a better grasp of"]],
+  ["gain insights into", ["learn about"]],
+  ["valuable insights into", ["useful clues about", "a clearer view of"]],
+  ["valuable insights", ["useful lessons", "useful ideas"]]
 ];
 
 // Wordy phrases that a person would say shorter.
@@ -161,7 +215,26 @@ export const WORDY = [
   ["take into consideration", ["consider"]],
   ["on a daily basis", ["daily", "every day"]],
   ["on a regular basis", ["regularly"]],
-  ["until such time as", ["until"]]
+  ["until such time as", ["until"]],
+  ["in close proximity to", ["near"]],
+  ["a number of", ["several", "some"]],
+  ["at the end of the day", ["in the end"]],
+  ["each and every", ["every"]],
+  ["first and foremost", ["first"]],
+  ["in a timely manner", ["on time", "quickly"]],
+  ["is in need of", ["needs"]],
+  ["are in need of", ["need"]],
+  ["in the near future", ["soon"]],
+  ["on the other hand,", ["But", "Then again,"]],
+  ["as a matter of fact,", ["In fact,"]],
+  ["for all intents and purposes", ["in practice"]],
+  ["with the exception of", ["except"]],
+  ["it is clear that", [""]],
+  ["it is evident that", [""]],
+  ["it is undeniable that", [""]],
+  ["there is no doubt that", [""]],
+  ["serves to", ["helps"]],
+  ["the fact that", ["that"]]
 ];
 
 // Single stiff or AI-flavored words.
@@ -217,7 +290,41 @@ export const WORDS = [
   ["paramount", ["key"]],
   ["multifaceted", ["complex"]],
   ["innovative", ["new", "fresh"]],
-  ["groundbreaking", ["new", "big"]]
+  ["groundbreaking", ["new", "big"]],
+  ...v(["optimize", "optimizes", "optimized", "optimizing"], ["improve", "improves", "improved", "improving"], ["tune", "tunes", "tuned", "tuning"]),
+  ...v(["endeavor", "endeavors", "endeavored", "endeavoring"], ["try", "tries", "tried", "trying"]),
+  ...v(["ascertain", "ascertains", "ascertained", "ascertaining"], ["find out", "finds out", "found out", "finding out"]),
+  ...v(["exemplify", "exemplifies", "exemplified", "exemplifying"], ["show", "shows", "showed", "showing"]),
+  ...v(["encompass", "encompasses", "encompassed", "encompassing"], ["cover", "covers", "covered", "covering"]),
+  ...v(["necessitate", "necessitates", "necessitated", "necessitating"], ["need", "needs", "needed", "needing"]),
+  ...v(["amplify", "amplifies", "amplified", "amplifying"], ["boost", "boosts", "boosted", "boosting"]),
+  ...v(["resonate", "resonates", "resonated", "resonating"], ["connect", "connects", "connected", "connecting"]),
+  ["revolutionizing", ["changing", "reshaping"]],
+  ["unparalleled", ["unmatched", "rare"]],
+  ["indispensable", ["essential", "vital"]],
+  ["invaluable", ["very useful"]],
+  ["noteworthy", ["notable"]],
+  ["profound", ["deep"]],
+  ["profoundly", ["deeply"]],
+  ["substantial", ["large", "big"]],
+  ["myriads", ["lots"]],
+  ["paradigm", ["model"]],
+  ["paradigm shift", ["big change"]],
+  ["captivating", ["gripping", "engaging"]],
+  ["enthralling", ["gripping"]],
+  ["exquisite", ["lovely", "fine"]],
+  ["nevertheless", ["still"]],
+  ["nonetheless", ["still"]],
+  ["wherein", ["where"]],
+  ["whilst", ["while"]],
+  ["amongst", ["among"]],
+  ["commonplace", ["common"]],
+  ["proactive", ["active", "forward-looking"]],
+  ["proactively", ["early", "ahead of time"]],
+  ["actionable", ["practical", "usable"]],
+  ["impactful", ["powerful", "effective"]],
+  ["ever-growing", ["growing"]],
+  ["ever-increasing", ["growing", "rising"]]
 ];
 
 // Linking words at the start of a sentence. "neutral" works in any tone; "casual" adds options for casual and blog.
@@ -233,7 +340,27 @@ export const OPENERS = {
   "Overall": { neutral: ["All in all,", ""], casual: [] },
   "Thus": { neutral: ["So,"], casual: ["So"] },
   "Firstly": { neutral: ["First,"], casual: [] },
-  "Secondly": { neutral: ["Second,"], casual: [] }
+  "Secondly": { neutral: ["Second,"], casual: [] },
+  "Thirdly": { neutral: ["Third,"], casual: [] },
+  "Lastly": { neutral: ["Finally,", "Last,"], casual: [] },
+  "However": { neutral: ["Still,", "Even so,", "But"], casual: ["But"] },
+  "Therefore": { neutral: ["So,"], casual: ["So"] },
+  "Hence": { neutral: ["So,"], casual: ["So"] },
+  "Accordingly": { neutral: ["So,"], casual: ["So"] },
+  "Indeed": { neutral: ["", "In fact,"], casual: [] },
+  "Essentially": { neutral: ["", "Basically,"], casual: [] },
+  "Interestingly": { neutral: [""], casual: [] },
+  "Significantly": { neutral: [""], casual: [] },
+  "Crucially": { neutral: [""], casual: [] },
+  "Undoubtedly": { neutral: ["", "Clearly,"], casual: [] },
+  "Similarly": { neutral: ["Likewise,", "In the same way,"], casual: [] },
+  "Specifically": { neutral: ["In particular,", "To be exact,"], casual: [] },
+  "As a result": { neutral: ["So,"], casual: ["So"] },
+  "In light of this": { neutral: ["Given this,", "So,"], casual: [] },
+  "With this in mind": { neutral: ["So,", ""], casual: [] },
+  "To this end": { neutral: ["For this,", "So,"], casual: [] },
+  "In other words": { neutral: ["Put simply,", "That is,"], casual: [] },
+  "Admittedly": { neutral: ["Sure,", "True,"], casual: [] }
 };
 
 // Contractions, applied only when the phrase does not end a clause.
@@ -241,7 +368,10 @@ export const CONTRACTIONS = [
   ["it is", "it's"], ["that is", "that's"], ["there is", "there's"], ["do not", "don't"], ["does not", "doesn't"],
   ["did not", "didn't"], ["is not", "isn't"], ["are not", "aren't"], ["was not", "wasn't"], ["cannot", "can't"],
   ["will not", "won't"], ["would not", "wouldn't"], ["should not", "shouldn't"], ["they are", "they're"],
-  ["we are", "we're"], ["you are", "you're"], ["i am", "I'm"], ["it will", "it'll"], ["we will", "we'll"], ["they will", "they'll"]
+  ["we are", "we're"], ["you are", "you're"], ["i am", "I'm"], ["it will", "it'll"], ["we will", "we'll"], ["they will", "they'll"],
+  ["have not", "haven't"], ["has not", "hasn't"], ["had not", "hadn't"], ["could not", "couldn't"],
+  ["were not", "weren't"], ["he is", "he's"], ["she is", "she's"],
+  ["you will", "you'll"], ["i will", "I'll"], ["what is", "what's"], ["who is", "who's"]
 ];
 
 // Bangla stock phrases.
@@ -281,7 +411,27 @@ export const BN_PHRASES = [
   ["বহুমাত্রিক", ["নানা দিকের"]],
   ["বিশেষভাবে উল্লেখযোগ্য", ["চোখে পড়ার মতো"]],
   ["দিন দিন বৃদ্ধি পাচ্ছে", ["দিন দিন বাড়ছে"]],
-  ["আমাদের দৈনন্দিন জীবনে", ["রোজকার জীবনে"]]
+  ["আমাদের দৈনন্দিন জীবনে", ["রোজকার জীবনে"]],
+  ["এটি স্পষ্ট যে", [""]],
+  ["এটা স্পষ্ট যে", [""]],
+  ["এ কথা অনস্বীকার্য যে", ["মানতেই হবে,"]],
+  ["এতে কোনো সন্দেহ নেই যে", ["সত্যি বলতে"]],
+  ["লক্ষ্য করা যায় যে", ["দেখা যায়,"]],
+  ["বিশেষ করে উল্লেখ্য", ["বিশেষ করে"]],
+  ["অত্যন্ত গুরুত্বপূর্ণ", ["খুব জরুরি", "খুব দরকারি"]],
+  ["ক্রমবর্ধমান", ["বাড়তে থাকা"]],
+  ["উল্লেখযোগ্যভাবে", ["অনেকটা", "চোখে পড়ার মতো"]],
+  ["প্রতিনিয়ত", ["সবসময়", "রোজ"]],
+  ["ব্যাপকভাবে", ["অনেক বেশি", "ব্যাপক হারে"]],
+  ["অবদান রাখে", ["কাজে আসে", "ভূমিকা রাখে"]],
+  ["পরিলক্ষিত হয়", ["দেখা যায়"]],
+  ["প্রতীয়মান হয়", ["বোঝা যায়"]],
+  ["সহায়ক ভূমিকা পালন করে", ["সাহায্য করে"]],
+  ["ভূমিকা পালন করে", ["ভূমিকা রাখে", "কাজ করে"]],
+  ["প্রভাব বিস্তার করে", ["প্রভাব ফেলে"]],
+  ["নিশ্চিত করা প্রয়োজন", ["নিশ্চিত করতে হবে"]],
+  ["প্রয়োজনীয়তা অপরিসীম", ["দরকার অনেক"]],
+  ["সর্বক্ষেত্রে", ["সব জায়গায়", "সব কাজে"]]
 ];
 
 // AI phrases that have no rule on purpose.
@@ -312,7 +462,7 @@ export const CASUAL = new Set([
   "These days,", "these days", "Basically,", "basically", "lots of", "a big deal", "plenty of", "all kinds of",
   "matters a lot", "matter a lot", "matters a lot for", "matter a lot for", "matter a lot to", "make room for", "makes room for",
   "dig", "digs", "dug", "digging", "clear up", "clears up", "has cleared up", "have cleared up",
-  "Plus,", "On top of that,", "And", "So", "So,"
+  "Plus,", "On top of that,", "And", "So", "So,", "you need to", "it's key to", "loads of"
 ]);
 
 // "leverage", "foster" and "harness" are also nouns, so their base form is replaced only in a verb

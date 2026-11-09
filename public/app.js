@@ -1,10 +1,10 @@
-import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611080954";
-import { humanizeLocal, sentenceOptionsLocal } from "./rules.js?v=202611080954";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611080954";
-import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611080954";
-import { readTextFile, ACCEPT } from "./files.js?v=202611080954";
-import { makeDocx } from "./docx-export.js?v=202611080954";
-import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611080954";
+import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611090749";
+import { humanizeLocal, sentenceOptionsLocal } from "./rules.js?v=202611090749";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611090749";
+import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611090749";
+import { readTextFile, ACCEPT } from "./files.js?v=202611090749";
+import { makeDocx } from "./docx-export.js?v=202611090749";
+import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611090749";
 
 const $ = (id) => document.getElementById(id);
 const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
