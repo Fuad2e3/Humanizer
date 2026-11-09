@@ -11,11 +11,11 @@ There are two engines:
 
 | Feature | What it does |
 |---|---|
-| Quick engine | Replaces stock AI phrases ("plays a vital role in", "it is important to note that") and stiff words (utilize, leverage, robust), shortens wordy phrases (in order to, due to the fact that), drops filler openers (Moreover, Furthermore), adds contractions and splits or joins sentences so their length varies. Covers common stock phrases in Bangla too |
+| Quick engine | Replaces stock AI phrases ("plays a vital role in", "it is important to note that") and stiff words (utilize, leverage, robust), shortens wordy phrases (in order to, due to the fact that), drops or swaps filler openers (Moreover, However, Indeed), cuts empty lead-ins ("it is clear that"), adds contractions and splits or joins sentences so their length varies. Over 500 rules. Covers Bangla too: about 55 stock phrases, and long sentences split at "এবং" in Deep mode |
 | AI pattern score | Shows how AI-like the text looks before and after, on a meter, and explains why. It is computed in the browser from writing patterns, so detectors such as GPTZero or Turnitin may score differently |
 | Second pass | Quick: if the score is still above 30, the rules run once more one level stronger. AI: if the score is above 45, Claude rewrites once more with fixes for what the score found. The lower score is kept |
-| 3 modes | Light (phrases and words), Balanced (also openers, contractions and dashes), Deep (also sentence rhythm) |
-| Up to 3 versions | One click gives 1 to 3 different rewrites, each with its own score. Quick mode picks the best of three tries for each version |
+| 3 modes | Light (phrases and words), Balanced (also openers, contractions and dashes), Deep (also sentence rhythm, in English and Bangla) |
+| Up to 3 versions | One click gives 1 to 3 different rewrites, each with its own score. Quick mode picks the best of three tries for each version (five in Deep mode) |
 | Word limit | 3,000 words at a time in Quick mode. 500 per AI rewrite (set with `FREE_WORD_LIMIT`) |
 | Protected text | Numbers, locked words, links, email addresses, @mentions, #hashtags and quoted text are never changed |
 | File upload | .txt, .md, Word (.docx) and PDF files, by button or drag and drop. Files are read in the browser. Scanned PDFs without a text layer are not supported |

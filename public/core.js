@@ -23,12 +23,16 @@ export const AI_PHRASES = [
   "it's worth mentioning", "in the realm of", "a testament to", "paves the way", "pave the way", "shed light on", "sheds light on",
   "a myriad of", "myriad", "plethora", "in essence", "at its core", "stands as", "serves as a", "in the ever-changing",
   "navigating the", "holistic", "synergy", "bustling", "vibrant", "nestled", "keen eye", "unwavering", "commendable",
+  "revolutionizing", "revolutionize", "it is essential to", "it is crucial to", "strike a balance", "vast amounts of",
+  "an integral part of", "has the potential to", "a profound impact on", "unparalleled", "indispensable", "invaluable",
+  "captivating", "paradigm shift", "valuable insights", "a diverse range of", "an array of", "to the next level", "first and foremost",
   "উল্লেখ্য যে", "পরিশেষে বলা যায়", "নিঃসন্দেহে", "এক কথায় বলা যায়", "বর্তমান যুগে", "অত্যন্ত গুরুত্বপূর্ণ ভূমিকা",
   "এটি লক্ষণীয় যে", "এটা বলা বাহুল্য", "বলা বাহুল্য", "গুরুত্বপূর্ণ ভূমিকা পালন করে", "সর্বোপরি", "পরিশেষে", "তাছাড়া",
   "অধিকন্তু", "বিভিন্ন ক্ষেত্রে", "ব্যাপক পরিসরে", "একটি গুরুত্বপূর্ণ বিষয়", "আধুনিক যুগে", "প্রযুক্তির এই যুগে",
   "সামগ্রিকভাবে", "অপরিহার্য", "নিঃসন্দেহে বলা যায়", "উপসংহারে বলা যায়", "এছাড়াও", "এক্ষেত্রে উল্লেখ্য",
   "অনস্বীকার্য", "অপরিসীম", "সুদূরপ্রসারী", "যুগান্তকারী", "বহুমাত্রিক", "সার্বিকভাবে", "বিশেষভাবে উল্লেখযোগ্য",
-  "গুরুত্ব অপরিসীম", "দিন দিন বৃদ্ধি পাচ্ছে", "একবিংশ শতাব্দীতে", "আমাদের দৈনন্দিন জীবনে"
+  "গুরুত্ব অপরিসীম", "দিন দিন বৃদ্ধি পাচ্ছে", "একবিংশ শতাব্দীতে", "আমাদের দৈনন্দিন জীবনে", "ক্রমবর্ধমান", "পরিলক্ষিত হয়",
+  "প্রতীয়মান হয়", "উল্লেখযোগ্যভাবে", "ভূমিকা পালন করে"
 ].sort((a, b) => b.length - a.length);
 
 const TONES = {
