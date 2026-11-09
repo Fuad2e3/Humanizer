@@ -1,10 +1,10 @@
-import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611090823";
-import { humanizeLocal, sentenceOptionsLocal, findNames } from "./rules.js?v=202611090823";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611090823";
-import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611090823";
-import { readTextFile, ACCEPT } from "./files.js?v=202611090823";
-import { makeDocx } from "./docx-export.js?v=202611090823";
-import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611090823";
+import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611090832";
+import { humanizeLocal, sentenceOptionsLocal, findNames } from "./rules.js?v=202611090832";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611090832";
+import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611090832";
+import { readTextFile, ACCEPT } from "./files.js?v=202611090832";
+import { makeDocx } from "./docx-export.js?v=202611090832";
+import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611090832";
 
 const $ = (id) => document.getElementById(id);
 const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
@@ -29,13 +29,21 @@ const MODE_NAMES = { light: "Light", medium: "Balanced", strong: "Deep" };
 const TONE_NAMES = { natural: "Natural", casual: "Casual", formal: "Formal", academic: "Academic", blog: "Blog" };
 
 // ---------- State ----------
-let state = {
+const exampleState = () => ({
   source: EXAMPLE_IN,
   versions: [{ text: EXAMPLE_RUN.text, check: null, engine: "quick", summary: summarize(EXAMPLE_RUN.changes), status: "done" }],
   active: 0,
   example: true,
   tab: "result"
-};
+});
+let state = exampleState();
+// The example result belongs to the example text: once the visitor clears or changes that text,
+// the result side goes back to empty, and "Try an example" brings both back.
+function syncExample() {
+  const isExample = input.value.trim() === EXAMPLE_IN;
+  if (state.example && !isExample) { state = { source: "", versions: [], active: 0, example: false, tab: "result" }; renderAll(); }
+  else if (isExample && !state.versions.length) { state = exampleState(); renderAll(); }
+}
 const cur = () => state.versions[state.active] || { text: "", check: null, status: "idle" };
 // "quick": rules in the browser (always there). "ai": our server's /api, offered only when /api/health answers.
 let engine = "quick", serverReady = false, serverLimit = FREE_WORD_LIMIT;
@@ -135,9 +143,9 @@ function syncInput() {
   setBadge($("in-ai"), aiScore(input.value));
   $("empty").hidden = input.value.length > 0;
 }
-input.addEventListener("input", () => { syncInput(); renderChecks(); });
+input.addEventListener("input", () => { syncInput(); syncExample(); renderChecks(); });
 input.addEventListener("scroll", () => { backdropInner.style.transform = `translateY(${-input.scrollTop}px)`; });
-$("clear").addEventListener("click", () => { input.value = ""; syncInput(); renderChecks(); input.focus(); });
+$("clear").addEventListener("click", () => { input.value = ""; syncInput(); syncExample(); renderChecks(); input.focus(); });
 
 function setBadge(el, r) {
   el.className = "ai-badge" + (r ? " " + r.tone : "");
@@ -150,11 +158,11 @@ $("paste").addEventListener("click", async () => {
   try {
     const text = await navigator.clipboard.readText();
     if (!text.trim()) { setStatus("The clipboard is empty."); return; }
-    input.value = text; syncInput(); renderChecks(); input.focus();
+    input.value = text; syncInput(); syncExample(); renderChecks(); input.focus();
   } catch { input.focus(); setStatus("Press Ctrl+V (or ⌘V) to paste."); }
 });
 $("upload2").addEventListener("click", () => $("file").click());
-$("try-example").addEventListener("click", () => { input.value = EXAMPLE_IN; syncInput(); renderChecks(); input.focus(); });
+$("try-example").addEventListener("click", () => { input.value = EXAMPLE_IN; syncInput(); syncExample(); renderChecks(); input.focus(); });
 
 // ---------- Output ----------
 function renderOutput() {
@@ -162,7 +170,7 @@ function renderOutput() {
   $("example-badge").hidden = !state.example;
   const has = !!v.text;
   output.classList.toggle("placeholder", !has);
-  if (!has) output.textContent = v.status === "err" ? (v.error || "This version could not be created.") : v.status === "streaming" ? "" : "Paste your text, then press “Humanize”.";
+  if (!has) output.textContent = v.status === "err" ? (v.error || "This version could not be created.") : v.status === "streaming" ? "" : "Your humanized text will appear here.";
   else if (state.tab === "diff") output.innerHTML = diffHTML(state.source, v.text);
   else if (v.status === "streaming" || goBtn.disabled) output.innerHTML = markAI(v.text);
   else output.innerHTML = clickableSentences(v.text);
@@ -174,6 +182,7 @@ function renderOutput() {
   $("use-version").hidden = !has || state.example || v.status === "streaming";
   setBadge($("out-ai"), has && v.status !== "streaming" ? aiScore(v.text) : null);
   $("copy").classList.toggle("accent", has && !state.example && v.status !== "streaming");
+  $("copy").disabled = $("download").disabled = !has || v.status === "streaming";
   $("sent-hint").hidden = !has || state.tab !== "result" || v.status === "streaming";
   closeAlt();
   $("report-for").textContent = state.versions.length > 1 ? `for Version ${state.active + 1}` : "";

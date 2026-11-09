@@ -255,3 +255,26 @@ test("with a server the engine choice appears and AI uses the API", { skip }, as
   assert.equal(calls.length, 1);
   await page.close();
 });
+
+test("clearing the example text clears the example result, and Try an example brings it back", { skip }, async () => {
+  const { page } = await openPage([], { engine: "quick", static: true });
+  assert.ok(!(await page.isHidden("#example-badge")));
+  await page.click("#clear");
+  assert.match(await outputText(page), /will appear here/);
+  assert.ok(await page.isDisabled("#copy"));
+  assert.ok(await page.isHidden("#report"));
+  await page.click("#try-example");
+  assert.ok(!(await page.isHidden("#example-badge")));
+  assert.ok(!(await page.isDisabled("#copy")));
+  await page.close();
+});
+
+test("every page has the footer and no old Locked words text", { skip }, async () => {
+  const { page } = await openPage([], { engine: "quick", static: true });
+  for (const f of ["", "features.html", "faq.html", "pricing.html"]) {
+    await page.goto(BASE + f);
+    assert.ok(await page.$(".site-foot"), `${f || "index"} has no footer`);
+    assert.ok(!/locked word|lock any|lock brand/i.test(await page.textContent("body")), `${f || "index"} still mentions locked words`);
+  }
+  await page.close();
+});
