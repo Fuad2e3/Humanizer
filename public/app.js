@@ -1,10 +1,10 @@
-import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611090805";
-import { humanizeLocal, sentenceOptionsLocal, findNames } from "./rules.js?v=202611090805";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611090805";
-import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611090805";
-import { readTextFile, ACCEPT } from "./files.js?v=202611090805";
-import { makeDocx } from "./docx-export.js?v=202611090805";
-import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611090805";
+import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611090823";
+import { humanizeLocal, sentenceOptionsLocal, findNames } from "./rules.js?v=202611090823";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611090823";
+import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611090823";
+import { readTextFile, ACCEPT } from "./files.js?v=202611090823";
+import { makeDocx } from "./docx-export.js?v=202611090823";
+import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611090823";
 
 const $ = (id) => document.getElementById(id);
 const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
@@ -129,7 +129,7 @@ function syncInput() {
   backdropInner.innerHTML = markAI(input.value) + "\n ";
   backdropInner.style.transform = `translateY(${-input.scrollTop}px)`;
   const n = words(input.value);
-  $("wc-text").textContent = `${n.toLocaleString()} / ${wordLimit.toLocaleString()} words`;
+  $("wc-text").innerHTML = `${n.toLocaleString()} / ${wordLimit.toLocaleString()}<span class="wc-unit"> words</span>`;
   $("wc-bar").style.width = Math.min(100, (n / wordLimit) * 100) + "%";
   $("wc-text").parentElement.classList.toggle("over", n > wordLimit);
   setBadge($("in-ai"), aiScore(input.value));
@@ -202,6 +202,15 @@ function renderVersionTabs() {
 // ---------- Report ----------
 const setPill = (id, cls, text) => { const p = $(id); p.className = "pill " + cls; p.textContent = text; };
 const chip = (text, cls = "") => { const s = document.createElement("span"); s.className = "chip " + cls; s.textContent = text; return s; };
+// A short row of tags; past `max`, the rest become "+N".
+const chipRow = (id, items, max = 6) => {
+  const shown = items.slice(0, max).map(([t, cls]) => chip(t, cls));
+  if (items.length > max) shown.push(chip(`+${items.length - max}`, "more"));
+  $(id).replaceChildren(...shown);
+};
+// Short names for what still looks AI-written
+const SIGNAL_TAGS = { phrases: "AI phrases", flat: "Same-length sentences", starters: "Linking-word openers", stiff: "No contractions",
+  dash: "Em-dashes", repeat: "Repeated words", openings: "Same sentence openings" };
 
 // Report: hidden until there is a result, then only the numbers and any problems.
 const pillTone = (score) => (score >= 90 ? "ok" : score >= 75 ? "warn" : "bad");
@@ -218,13 +227,12 @@ function renderChecks() {
   bar("ai-before-bar", before); bar("ai-after-bar", after);
   countTo($("ai-before-num"), before ? before.score : null);
   countTo($("ai-after-num"), after ? after.score : null);
-  const why = $("ai-signals");
-  if (!after) { setPill("ai-pill", "idle", "Too short"); why.hidden = false; why.textContent = `Needs at least ${MIN_WORDS} words for a score.`; }
+  if (!after) { setPill("ai-pill", "idle", "Too short"); chipRow("ai-signals", [[`Needs ${MIN_WORDS}+ words`, "more"]]); }
   else {
     const drop = before ? before.score - after.score : 0;
     setPill("ai-pill", after.tone, after.tone === "ok" && drop > 0 ? `${drop} lower` : after.label);
-    why.hidden = !(after.score > 30 && after.signals.length);
-    if (!why.hidden) why.textContent = `Still looks AI-written: ${after.signals.join(", ")}.`;
+    const tags = after.score > 30 ? after.keys.map((k) => [SIGNAL_TAGS[k], "warn"]) : [];
+    chipRow("ai-signals", tags.length ? tags : [["Reads natural", "kept"]]);
   }
 
   // AI phrases: only the ones still left are shown
@@ -233,7 +241,9 @@ function renderChecks() {
   $("a-from").textContent = String(total(inAI));
   $("a-to").textContent = String(left);
   setPill("a-pill", left === 0 ? "ok" : left <= 2 ? "warn" : "bad", left === 0 ? "Clean" : `${left} left`);
-  $("a-chips").replaceChildren(...[...outAI.entries()].map(([k, c]) => chip(c > 1 ? `${k} ×${c}` : k)));
+  // Phrases still left first, then the ones that were removed
+  chipRow("a-chips", [...[...outAI.entries()].map(([k, c]) => [c > 1 ? `${k} ×${c}` : k, "warn"]),
+    ...[...inAI.keys()].filter((k) => !outAI.has(k)).map((k) => [k, "gone"])], 4);
 
   // Numbers and names found in the text: only the missing ones are shown
   const items = [...numbersIn(src), ...lockedTerms(src).filter((t) => src.toLowerCase().includes(t.toLowerCase()))];
@@ -244,7 +254,7 @@ function renderChecks() {
     $("f-unit").textContent = `/${items.length} kept`;
     setPill("f-pill", missing.length ? "bad" : "ok", missing.length ? `${missing.length} missing` : "All kept");
   }
-  $("f-chips").replaceChildren(...missing.map((t) => chip("✗ " + t, "missing")));
+  chipRow("f-chips", [...missing.map((t) => ["✗ " + t, "missing"]), ...items.filter((t) => !missing.includes(t)).map((t) => ["✓ " + t, "kept"])]);
 
   renderMeaning(v);
 }
@@ -263,14 +273,17 @@ function renderMeaning(v) {
     const total = s.words + s.sentences + s.contractions;
     countTo($("m-num"), total);
     setPill("m-pill", total ? "ok" : "idle", total ? "Wording only" : "Nothing found");
-    const parts = [];
-    if (s.words) parts.push(`${s.words} phrase${s.words === 1 ? "" : "s"} and word${s.words === 1 ? "" : "s"} replaced`);
-    if (s.sentences) parts.push(`${s.sentences} sentence${s.sentences === 1 ? "" : "s"} reshaped`);
-    if (s.contractions) parts.push(`${s.contractions} contraction${s.contractions === 1 ? "" : "s"}`);
-    verdict.hidden = false;
-    verdict.textContent = total ? parts.join(", ") + ". Ideas and order stay the same." : "No AI patterns the rules know were found.";
+    const tags = [];
+    if (s.words) tags.push([`${s.words} word${s.words === 1 ? "" : "s"} and phrases`]);
+    if (s.sentences) tags.push([`${s.sentences} sentence${s.sentences === 1 ? "" : "s"} reshaped`]);
+    if (s.contractions) tags.push([`${s.contractions} contraction${s.contractions === 1 ? "" : "s"}`]);
+    tags.push(["Same ideas and order", "kept"]);
+    verdict.hidden = true;
+    detail.className = "chips";
+    chipRow("m-detail", total ? tags : [["No known AI patterns", "more"]]);
     return;
   }
+  detail.className = "detail";
   if (c === "pending") { ring(null); setPill("m-pill", "idle", "Checking…"); verdict.hidden = true; return; }
   if (!c) { ring(null); setPill("m-pill", "idle", "Not checked"); verdict.hidden = true; return; }
   ring(c.score);
