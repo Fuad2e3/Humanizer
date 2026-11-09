@@ -1,8 +1,8 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { aiScore } from "./detect.js?v=202611090749";
-import { words, spread } from "./text.js?v=202611090749";
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611090749";
+import { aiScore } from "./detect.js?v=202611090756";
+import { words, spread } from "./text.js?v=202611090756";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611090756";
 
 // Private-use characters mark spots in the text while the passes run; none survive to the output.
 const ch = (n) => String.fromCharCode(n);
