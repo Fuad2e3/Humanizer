@@ -398,8 +398,49 @@ test("a replacement avoids a word already used nearby", () => {
 test("benchmark: typical AI text comes out human-like, human text barely changes", () => {
   const b = bench();
   assert.ok(b["English strong"].after <= 18, `English Deep average ${b["English strong"].after}`);
+  assert.ok(b["Bangla medium"].after <= 10, `Bangla Balanced average ${b["Bangla medium"].after}`);
   assert.ok(b["English medium"].after <= 20, `English Balanced average ${b["English medium"].after}`);
   assert.ok(b["English strong"].worst <= 32, `English Deep worst ${b["English strong"].worst}`);
-  assert.ok(b["Bangla strong"].after <= 20, `Bangla Deep average ${b["Bangla strong"].after}`);
+  assert.ok(b["Bangla strong"].after <= 10, `Bangla Deep average ${b["Bangla strong"].after}`);
   assert.ok(b.humanChanged <= 5, `human text changed ${b.humanChanged}%`);
+});
+
+// ---------- More rhythm: "which", "as", "including", Bangla joins ----------
+import { mergeBangla } from "../public/rules.js";
+
+test("', which' about a whole clause and a causal ', as' become their own sentences", () => {
+  assert.equal(splitRelative("The melting of polar ice caps is raising sea levels quickly, which poses a threat to coastal towns.").text,
+    "The melting of polar ice caps is raising sea levels quickly. This poses a threat to coastal towns.");
+  assert.equal(splitRelative("Also, employee training is essential, as human error remains one of the leading causes of breaches.").text,
+    "Also, employee training is essential. That's because human error remains one of the leading causes of breaches.");
+});
+
+test("'as' that means 'while' or 'in the way that' stays", () => {
+  for (const s of ["Prices keep climbing across the whole region, as the city grows faster than anyone expected.",
+    "She kept working late on the report every night, as her manager had asked her to do.",
+    "The team finished the work on time, as well as the extra report for the board."]) assert.equal(splitRelative(s).text, s);
+});
+
+test("', including' splits only after a plural noun", () => {
+  assert.equal(splitTails("Chronic sleep loss can lead to many health issues, including weakened immunity and weight gain.").text,
+    "Chronic sleep loss can lead to many health issues. These include weakened immunity and weight gain.");
+  const s = "Remote work offers many advantages for the team, including reduced commuting time and better balance.";
+  assert.equal(splitTails(s).text, s);
+});
+
+test("no second 'and' after a list, no second 'but', nothing after 'not only'", () => {
+  for (const s of ["Eating well helps the heart, the brain, and the gut. Also, it keeps your energy steady all day.",
+    "This process not only creates jobs but also builds local skills. However, starting out is risky for most founders."]) {
+    assert.equal(mergeLinked(s).text, s);
+  }
+});
+
+test("Bangla joins at a linking word", () => {
+  assert.equal(mergeBangla("অনলাইন কেনাকাটা মোবাইল ফোনকে আরও জনপ্রিয় করেছে। তবে অতিরিক্ত ব্যবহার স্বাস্থ্যের ক্ষতি করে।").text,
+    "অনলাইন কেনাকাটা মোবাইল ফোনকে আরও জনপ্রিয় করেছে, তবে অতিরিক্ত ব্যবহার স্বাস্থ্যের ক্ষতি করে।");
+});
+
+test("'optimal' keeps the sentence grammatical", () => {
+  assert.equal(swapWords("Water matters for optimal bodily function.", first).text, "Water matters for ideal bodily function.");
+  assert.equal(swapWords("Pick the optimal route.", first).text, "Pick the best route.");
 });
