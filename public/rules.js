@@ -1,8 +1,8 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { aiScore } from "./detect.js?v=202611090845";
-import { words, spread } from "./text.js?v=202611090845";
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611090845";
+import { aiScore } from "./detect.js?v=202611090855";
+import { words, spread } from "./text.js?v=202611090855";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611090855";
 
 // Private-use characters mark spots in the text while the passes run; none survive to the output.
 const ch = (n) => String.fromCharCode(n);
@@ -205,9 +205,13 @@ const OPENER_MAP = new Map(OPENER_KEYS.map((k) => [k.toLowerCase(), OPENERS[k]])
 export function dropOpeners(text, pick, tone = "natural") {
   const changes = [];
   const casual = tone === "casual" || tone === "blog";
+  // First words that already start a sentence: a new opener should not repeat one ("In ... In the end").
+  const starts = new Set([...text.matchAll(new RegExp(`${START}["'“‘(]*(\\p{L}+)`, "gu"))].map((m) => m[2].toLowerCase()));
   const out = text.replace(OPENER_RE, (m, pre, word) => {
     const o = OPENER_MAP.get(word.toLowerCase());
-    const to = pick(casual ? [...o.neutral, ...o.casual] : o.neutral, "open:" + word.toLowerCase());
+    const all = casual ? [...o.neutral, ...o.casual] : o.neutral;
+    const fresh = all.filter((x) => x === "" || !starts.has(x.split(/[ ,]/)[0].toLowerCase()));
+    const to = pick(fresh.length ? fresh : all, "open:" + word.toLowerCase());
     if (to === null) return m;
     changes.push({ type: "opener", from: word, to });
     return pre + (to === "" ? MARK : to + " ");
@@ -390,12 +394,36 @@ export function splitBangla(text, { flat = false } = {}) {
 // "a mixed blessing that offers both..." -> "a mixed blessing. It offers both...". Only a verb that is
 // clearly singular follows ("offers", "is", "has"), so "It" is always right; "studies show that 62%"
 // or "the claim that students cheat" never match. "It is" becomes "It's" unless the tone is formal.
-const SING_VERBS = "is|has|was|offers|provides|helps|makes|gives|allows|lets|shows|means|includes|requires|creates|brings|keeps|remains|seems|needs|uses|works|takes|leads|adds|costs|saves|changes|affects|depends|matters|comes|goes|runs|sits|stays|covers|turns|puts|holds|builds|supports|reduces|improves|increases|explains|describes|connects|combines|lets";
+const SING_VERBS = "is|has|was|offers|provides|helps|makes|gives|allows|lets|shows|means|includes|requires|creates|brings|keeps|remains|seems|needs|uses|works|takes|leads|adds|costs|saves|changes|affects|depends|matters|comes|goes|runs|sits|stays|covers|turns|puts|holds|builds|supports|reduces|improves|increases|explains|describes|connects|combines|poses|causes|raises|threatens|forces|limits|protects|lowers|drives";
 const REL_RE = new RegExp(`(\\b(?:a|an|the|this|that|its|their|our|your|his|her|one)[ \\t]+(?:[\\p{L}-]+[ \\t]+){0,3}?[\\p{L}-]+)(,?[ \\t]+)(?:that|which)[ \\t]+(${SING_VERBS})(?![\\p{L}])`, "giu");
+const WHICH_RE = new RegExp(`,[ \\t]+which[ \\t]+(${SING_VERBS})(?![\\p{L}])`, "iu");
+// "as" that means "because": followed by a full clause, and not "as well", "as a result", "as shown",
+// or a verb of change ("as prices rise", "as the city grows"), where it means "while".
+const AS_RE = /,[ \t]+as[ \t]+(?!well\b|a result\b|such\b|part\b|long\b|soon\b|much\b|many\b|shown\b|seen\b|mentioned\b|noted\b|described\b|expected\b|usual\b)/iu;
+const AS_CHANGE = /\b(?:grows?|grew|rises?|rose|increases?|decreases?|falls?|fell|continues?|evolves?|changes?|gets?|becomes?|ages?|moves?|goes|went|spreads?|expands?|develops?|improves?)\b/i;
 export function splitRelative(text, tone = "natural") {
   const formal = tone === "formal" || tone === "academic";
   return perParagraph(text, (p, changes) => sentencesOf(p).map((s) => {
     if (!isLatin(s) || words(s) < 12) return s;
+    // ", which poses a threat" about the whole clause -> ". This poses a threat"
+    const w = s.match(WHICH_RE);
+    if (w && words(s.slice(0, w.index)) >= 8 && words(s.slice(w.index + w[0].length)) >= 3) {
+      changes.push({ type: "split", from: w[0].replace(/^,/, "").trim(), to: ". This" });
+      return s.slice(0, w.index) + ". This " + w[1].toLowerCase() + s.slice(w.index + w[0].length);
+    }
+    // ", as human error remains..." -> ". That's because human error remains..."
+    const a = s.match(AS_RE);
+    if (a) {
+      const rest = s.slice(a.index + a[0].length), clause = rest.split(/[,;]/)[0];
+      // "as her manager asked", "as you know": "as" means "in the way that" there, not "because".
+      const manner = /\b(?:ask|asks|asked|tell|tells|told|plan|plans|planned|promise|promised|agree|agreed|request|requested|instruct|instructed|advise|advised|suggest|suggested|intend|intended|know|knew|known|say|says|said|wish|wished|want|wanted|like|liked|please)\b|\b(?:do|did|does|to)[.!?]*$/i;
+      const nounClause = /^(?:[\p{L}-]+[ \t]+){1,3}(?:is|are|was|were|has|have|had|can|could|will|would|may|might|must|remains|remain|makes|means|needs|takes|lacks|depends)(?![\p{L}])/iu.test(rest);
+      if ((SUBJECT.test(rest) || nounClause) && !AS_CHANGE.test(clause) && !manner.test(clause.trim()) && words(s.slice(0, a.index)) >= 5 && words(rest) >= 4) {
+        const because = formal ? "This is because" : "That's because";
+        changes.push({ type: "split", from: "as", to: ". " + because });
+        return s.slice(0, a.index) + ". " + because + " " + rest;
+      }
+    }
     let done = false;
     return s.replace(REL_RE, (m, head, sep, verb, off) => {
       const left = words(s.slice(0, off) + head), right = words(s.slice(off + m.length));
@@ -427,10 +455,13 @@ export function mergeLinked(text, tone = "natural") {
     for (let i = 0; i + 1 < ss.length; i++) {
       const cur = ss[i], next = ss[i + 1].trimStart();
       // Skip a sentence that already joins two clauses (", and they..."); a list (", and lean proteins") is fine.
-      const joinedAlready = [...cur.matchAll(/,\s+(?:and|but|so)\s+/gi)].some((m) => SUBJECT.test(cur.slice(m.index + m[0].length)));
+      const isJoined = (x) => [...x.matchAll(/,\s+(?:and|but|so)\s+/gi)].some((m) => SUBJECT.test(x.slice(m.index + m[0].length)) || /^\p{Ll}+ing\b/u.test(x.slice(m.index + m[0].length)));
+      const joinedAlready = isJoined(cur) || isJoined(next);
       if (!isLatin(cur) || !isLatin(next) || !/[^.]\.[ \t]*$/.test(cur) || joinedAlready) continue;
       const link = LINKS.find(([re]) => re.test(next));
       if (!link || (formal && link[1] !== "but" && link[1] !== "so")) continue;
+      // No second "and" after a list's ", and", no second "but", and never after "not only".
+      if ((link[1] === "and" && /,\s+and\s/i.test(cur)) || (link[1] === "but" && /\bbut\b/i.test(cur)) || /\bnot only\b/i.test(cur)) continue;
       const rest = next.replace(link[0], "");
       const a = words(cur), b = words(rest);
       if (a < 5 || b < 4 || a + b > 42) continue;
@@ -463,7 +494,11 @@ const TAILS = [
   [/,[ \t]+leading[ \t]+to[ \t]+/iu, () => ". That leads to "],
   [/,[ \t]+resulting[ \t]+in[ \t]+/iu, () => ". That results in "],
   [/,[ \t]+making[ \t]+it[ \t]+/iu, () => ". That makes it "],
-  [/,[ \t]+which[ \t]+(?:helps|allows|lets)[ \t]+/iu, () => ". That helps "]
+  [/,[ \t]+which[ \t]+(?:helps|allows|lets)[ \t]+/iu, () => ". That helps "],
+  // "...weather events, including A, B and C." -> "...weather events. These include A, B and C." Only after a
+  // plural noun ("events", "issues") and when the list runs to the end of the sentence; after a singular
+  // word the list may belong to an earlier noun ("advantages for the team, including"), so it stays.
+  [/([\p{L}-]*[^s\W]s),[ \t]+including[ \t]+(?=[^.!?]*[.!?]["'”’)]*[ \t]*$)/iu, (m, noun) => `${noun}. These include `]
 ];
 export function splitTails(text) {
   return perParagraph(text, (p, changes) => sentencesOf(p).map((s) => {
@@ -480,6 +515,30 @@ export function splitTails(text) {
   }).join(""));
 }
 
+// Bangla: joins a sentence that starts with a linking word (তবে, পাশাপাশি, তার ওপর, আর) to the one before
+// with a comma: "X। তবে Y।" -> "X, তবে Y।". The pair whose join varies the paragraph most is picked.
+const BN_LINK = /^(?:তবে|পাশাপাশি|তার ওপর|আর|এছাড়া|তাই)(?=[\s,])/u;
+export function mergeBangla(text) {
+  return perParagraph(text, (p, changes) => {
+    const ss = p.match(BN_SENTENCES) || [p];
+    const lens = ss.map(bnWords);
+    let best = null;
+    for (let i = 0; i + 1 < ss.length; i++) {
+      const cur = ss[i], next = ss[i + 1].trimStart();
+      if (isLatin(cur) || !/।[ \t]*$/.test(cur) || !BN_LINK.test(next) || /,/.test(cur)) continue;
+      const a = lens[i], b = lens[i + 1];
+      if (a < 3 || b < 3 || a + b > 24) continue;
+      const l = [...lens]; l.splice(i, 2, a + b);
+      const sp = spread(l.filter(Boolean));
+      if (!best || sp > best.sp) best = { i, sp };
+    }
+    if (!best) return p;
+    const { i } = best;
+    changes.push({ type: "merge", from: "।", to: "," });
+    return [...ss.slice(0, i), ss[i].trimEnd().replace(/।$/, "") + ", " + ss[i + 1].trimStart(), ...ss.slice(i + 2)].join("");
+  });
+}
+
 // Varies sentence length: splits then merges, more freely when every sentence is about the same length.
 export function rhythm(text, pick, tone = "natural") {
   const changes = [];
@@ -487,9 +546,17 @@ export function rhythm(text, pick, tone = "natural") {
     if (i % 2) return p;
     if (!isLatin(p)) {
       const lens = (p.match(BN_SENTENCES) || []).map(bnWords).filter(Boolean);
+      const flatBn = (t) => { const l = (t.match(BN_SENTENCES) || []).map(bnWords).filter(Boolean); return l.length >= 3 && spread(l) < 0.45; };
       const r = splitBangla(p, { flat: lens.length >= 3 && spread(lens) < 0.45 });
       changes.push(...r.changes);
-      return r.text;
+      let t = r.text;
+      for (let k = 0; k < 2 && flatBn(t); k++) {
+        const m = mergeBangla(t);
+        if (!m.changes.length) break;
+        changes.push(...m.changes);
+        t = m.text;
+      }
+      return t;
     }
     const flat = isFlat(p);
     const a = splitLong(p, pick, tone, { flat });
@@ -535,7 +602,8 @@ function runOnce(text, { strength, tone, locked = [], seed, names = findNames(te
   let t = p.text;
   const step = (r) => { t = r.text; changes.push(...r.changes); };
   // Deep keeps a linking word ("Moreover," -> "Also,") instead of deleting it, so rhythm can join there.
-  if (level >= 1) step(dropOpeners(t, level >= 2 ? (o, k) => pick(o.length > 1 ? o.filter((x) => x !== "") : o, k) : pick, tone));
+  const JOINABLE = /^open:(moreover|furthermore|additionally|in addition|however|consequently|thus)$/;
+  if (level >= 1) step(dropOpeners(t, level >= 2 ? (o, k) => pick(JOINABLE.test(k) && o.length > 1 ? o.filter((x) => x !== "") : o, k) : pick, tone));
   step(replacePhrases(t, pick));
   step(swapWords(t, pick));
   step(fixArticles(t, changes));
