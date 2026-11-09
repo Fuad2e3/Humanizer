@@ -419,3 +419,51 @@ a.nav-btn { text-decoration: none; color: var(--ink) }
 .faq details[open] summary::after { transform: rotate(45deg) }
 .faq details p { margin: 0 0 16px; color: var(--muted); font-size: 15px; line-height: 1.65 }
 @media (max-width: 640px) { .hide-sm { display: none !important } }
+
+/* ---- Footers v4: both sheets end with the same two rows, so they line up ----
+   Row 1: a quiet info line (word count, locked words / counts, hint). Row 2: controls, all 36px tall. */
+:root { --ctl: 36px }
+.settings, .sheet-foot { display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 14px 14px; border-top: 1px solid var(--line); min-height: 0 }
+.foot-row { display: flex; align-items: center; gap: 8px; min-width: 0 }
+.foot-meta { justify-content: space-between; min-height: 24px; gap: 6px 14px; flex-wrap: wrap; padding-left: 4px }
+.foot-row.controls { flex-wrap: wrap }
+.settings .wc { margin-left: 0; width: auto }
+.sheet-foot .actions { margin-left: 0; justify-content: flex-end }
+
+/* One height for every control */
+.settings .seg { height: var(--ctl); padding: 3px; border-radius: 10px; align-items: stretch }
+.settings .seg button { height: auto; padding: 0 11px; font-size: 13px; border-radius: 7px }
+.settings .seg-num button { min-width: 36px; padding: 0 6px }
+.seg-thumb { border-radius: 7px }
+.select select { height: var(--ctl); border-radius: 10px; font-size: 13px }
+.sheet-foot .btn { height: var(--ctl); padding: 0 14px; border-radius: 10px; font-size: 13.5px; background: var(--paper); border-color: var(--line); color: var(--ink) }
+.sheet-foot .btn:hover:not(:disabled) { background: var(--sunk); border-color: var(--line-strong) }
+.sheet-foot .btn.accent { border-color: var(--accent); color: var(--accent); background: var(--accent-soft) }
+
+/* Locked words: a quiet text button in the info line */
+.meta-btn { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 6px; margin-right: -6px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; transition: color .15s, background .15s }
+.meta-btn:hover, .meta-btn[aria-expanded="true"] { color: var(--ink); background: var(--sunk) }
+.meta-btn .mini-count { height: 17px; font-size: 10.5px }
+.meta-btn .chev { transition: transform .2s var(--ease) }
+.meta-btn[aria-expanded="true"] .chev { transform: rotate(180deg) }
+.wc .mono, .foot-info .mono { font-size: 12px }
+
+/* Report: equal-height cards */
+.stats { align-items: stretch }
+.with-info { display: inline-flex; align-items: center; gap: 6px }
+.stat { position: relative }
+.info { position: static; display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--line-strong); color: var(--faint); font: 600 9.5px/1 var(--f-mono); cursor: help; outline: none }
+.info:hover, .info:focus-visible { color: var(--ink); border-color: var(--muted) }
+.info .tip { position: absolute; z-index: 5; left: 12px; right: 12px; top: 44px; padding: 10px 12px; border-radius: 10px; background: var(--ink); color: var(--paper); font: 400 12px/1.5 var(--f-sans, inherit); text-align: left;
+  box-shadow: 0 12px 30px -12px rgba(0, 0, 0, .4); opacity: 0; visibility: hidden; transform: translateY(4px); transition: opacity .15s, transform .15s, visibility .15s; pointer-events: none }
+.info:hover .tip, .info:focus-visible .tip { opacity: 1; visibility: visible; transform: none }
+
+@media (max-width: 860px) { .settings .wc { width: auto } }
+@media (max-width: 520px) {
+  .foot-row.controls > * { flex: 1 1 auto }
+  .settings .seg button { flex: 1 0 auto; padding: 0 8px }
+  .sheet-foot .actions { display: grid; grid-template-columns: 1fr 1fr }
+  .sheet-foot .actions .btn { width: 100%; padding: 0 10px }
+  .sheet-foot .actions .btn[hidden] { display: none }
+  .wc-bar { width: 48px }
+}
