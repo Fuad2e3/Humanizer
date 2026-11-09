@@ -359,3 +359,47 @@ test("the example reads human-like in Deep mode", () => {
   assert.ok(r.score.score <= 30, `score ${r.score.score}: ${r.text}`);
   assert.ok(/blessing\. It offers/.test(r.text), r.text);
 });
+
+// ---------- Joins, "-ing" tails, and the benchmark ----------
+import { mergeLinked, splitTails } from "../public/rules.js";
+import { bench } from "../scripts/bench.mjs";
+
+test("a linking word becomes a join", () => {
+  assert.equal(mergeLinked("A strong online presence matters for every brand today. Also, it helps you reach a much wider audience.").text,
+    "A strong online presence matters for every brand today, and it helps you reach a much wider audience.");
+  assert.equal(mergeLinked("Remote work saves a lot of commuting time. Still, many people feel isolated at home.").text,
+    "Remote work saves a lot of commuting time, but many people feel isolated at home.");
+});
+
+test("a join keeps names capitalized and skips a sentence that is already joined", () => {
+  assert.match(mergeLinked("We tested three tools for the whole team. Also, Facebook added a new feature last week.").text, /, and Facebook added/);
+  assert.match(mergeLinked("Our team tried every option we could find. This made the choice much easier for everyone.").text, /, and this made/);
+  const joined = "We tested three tools, and they all failed in the same way. Also, the support team never replied.";
+  assert.equal(mergeLinked(joined).text, joined);
+});
+
+test("an '-ing' tail becomes its own sentence", () => {
+  assert.equal(splitTails("AI tools can assist teachers by automating admin tasks, allowing them to focus on teaching.").text,
+    "AI tools can assist teachers by automating admin tasks. That lets them focus on teaching.");
+  assert.equal(splitTails("Reading can serve as a form of relaxation, helping to reduce stress.").text,
+    "Reading can serve as a form of relaxation. That helps reduce stress.");
+});
+
+test("'not only ... but also' is never split", () => {
+  const s = "Not only does it expand vocabulary and improve comprehension skills, but it also builds empathy in young readers.";
+  assert.equal(splitLong(s, () => true, "natural", { flat: true }).text, s);
+});
+
+test("a replacement avoids a word already used nearby", () => {
+  const r = swapWords("People can improve their energy and enhance their well-being.", first);
+  assert.ok(!/improve their energy and improve/.test(r.text), r.text);
+});
+
+test("benchmark: typical AI text comes out human-like, human text barely changes", () => {
+  const b = bench();
+  assert.ok(b["English strong"].after <= 18, `English Deep average ${b["English strong"].after}`);
+  assert.ok(b["English medium"].after <= 20, `English Balanced average ${b["English medium"].after}`);
+  assert.ok(b["English strong"].worst <= 32, `English Deep worst ${b["English strong"].worst}`);
+  assert.ok(b["Bangla strong"].after <= 20, `Bangla Deep average ${b["Bangla strong"].after}`);
+  assert.ok(b.humanChanged <= 5, `human text changed ${b.humanChanged}%`);
+});
