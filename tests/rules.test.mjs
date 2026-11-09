@@ -333,3 +333,29 @@ test("the example keeps its names with no locked list", () => {
   const r = humanizeLocal(EXAMPLE, { strength: "strong" });
   for (const s of ["Facebook", "TikTok", "Bangladesh", "62%"]) assert.ok(r.text.includes(s), `lost ${s}: ${r.text}`);
 });
+
+// ---------- "that"/"which" clause split ----------
+import { splitRelative } from "../public/rules.js";
+
+test("a long sentence splits where 'that' starts a clause about the thing named", () => {
+  assert.equal(splitRelative("So, social media is a mixed blessing that offers both opportunities and challenges.").text,
+    "So, social media is a mixed blessing. It offers both opportunities and challenges.");
+  assert.equal(splitRelative("We bought the new reporting tool, which is far easier for the whole team to use.").text,
+    "We bought the new reporting tool. It's far easier for the whole team to use.");
+  assert.equal(splitRelative("We bought the new reporting tool, which is far easier for the whole team to use.", "formal").text,
+    "We bought the new reporting tool. It is far easier for the whole team to use.");
+});
+
+test("'that' after a verb or before a plural subject never splits", () => {
+  for (const s of ["Also, studies show that 62% of teenagers in Bangladesh use social media every single day.",
+    "Teachers reject the claim that students cheat more often when they use these online tools.",
+    "The managers said that the plan works well enough for the whole company this year."]) {
+    assert.equal(splitRelative(s).text, s);
+  }
+});
+
+test("the example reads human-like in Deep mode", () => {
+  const r = humanizeLocal(EXAMPLE, { strength: "strong" });
+  assert.ok(r.score.score <= 30, `score ${r.score.score}: ${r.text}`);
+  assert.ok(/blessing\. It offers/.test(r.text), r.text);
+});

@@ -1,8 +1,8 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { aiScore } from "./detect.js?v=202611090832";
-import { words, spread } from "./text.js?v=202611090832";
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611090832";
+import { aiScore } from "./detect.js?v=202611090836";
+import { words, spread } from "./text.js?v=202611090836";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611090836";
 
 // Private-use characters mark spots in the text while the passes run; none survive to the output.
 const ch = (n) => String.fromCharCode(n);
@@ -371,6 +371,27 @@ export function splitBangla(text, { flat = false } = {}) {
   });
 }
 
+// Splits a long sentence where "that" or "which" starts a clause about the thing just named:
+// "a mixed blessing that offers both..." -> "a mixed blessing. It offers both...". Only a verb that is
+// clearly singular follows ("offers", "is", "has"), so "It" is always right; "studies show that 62%"
+// or "the claim that students cheat" never match. "It is" becomes "It's" unless the tone is formal.
+const SING_VERBS = "is|has|was|offers|provides|helps|makes|gives|allows|lets|shows|means|includes|requires|creates|brings|keeps|remains|seems|needs|uses|works|takes|leads|adds|costs|saves|changes|affects|depends|matters|comes|goes|runs|sits|stays|covers|turns|puts|holds|builds|supports|reduces|improves|increases|explains|describes|connects|combines|lets";
+const REL_RE = new RegExp(`(\\b(?:a|an|the|this|that|its|their|our|your|his|her|one)[ \\t]+(?:[\\p{L}-]+[ \\t]+){0,3}?[\\p{L}-]+)(,?[ \\t]+)(?:that|which)[ \\t]+(${SING_VERBS})(?![\\p{L}])`, "giu");
+export function splitRelative(text, tone = "natural") {
+  const formal = tone === "formal" || tone === "academic";
+  return perParagraph(text, (p, changes) => sentencesOf(p).map((s) => {
+    if (!isLatin(s) || words(s) < 12) return s;
+    let done = false;
+    return s.replace(REL_RE, (m, head, sep, verb, off) => {
+      const left = words(s.slice(0, off) + head), right = words(s.slice(off + m.length));
+      if (done || left < 5 || right < 3) return m;
+      done = true;
+      changes.push({ type: "split", from: m.slice(head.length).trim(), to: ". It" });
+      return head + ". " + (!formal && verb.toLowerCase() === "is" ? "It's" : "It " + verb.toLowerCase());
+    });
+  }).join(""));
+}
+
 // Varies sentence length: splits then merges, more freely when every sentence is about the same length.
 export function rhythm(text, pick, tone = "natural") {
   const changes = [];
@@ -387,6 +408,11 @@ export function rhythm(text, pick, tone = "natural") {
     const b = mergeShort(a.text, pick, { flat });
     changes.push(...a.changes, ...b.changes);
     if (!flat || !isFlat(b.text)) return b.text;
+    // Still flat: split where "that"/"which" starts a clause, after the merge so it is not joined back.
+    const rel = splitRelative(b.text, tone);
+    changes.push(...rel.changes);
+    if (!isFlat(rel.text)) return rel.text;
+    b.text = rel.text;
     // Still flat: split wherever it is allowed, without the coin flip. "formal" leaves out "and",
     // so the ", and" a merge just added is not split again.
     const c = splitLong(b.text, (o) => (o.includes(true) ? true : pick(o)), "formal", { flat: true });
