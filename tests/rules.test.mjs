@@ -313,3 +313,23 @@ test("Deep mode breaks up flat Bangla", () => {
   assert.ok(r.changes.some((c) => c.type === "split"), "no Bangla split");
   assert.ok(before - r.score.score >= 50, `${before} -> ${r.score.score}`);
 });
+
+// ---------- Names are found automatically ----------
+import { findNames } from "../public/rules.js";
+
+test("names, brands and acronyms are found without a list", () => {
+  const names = findNames("Moreover, platforms like Facebook and TikTok matter. Robust Systems Ltd works with Bank of America. Dhaka University uses the iPhone, AI and NASA data. In Bangladesh it is crucial.");
+  for (const n of ["Facebook", "TikTok", "Robust Systems Ltd", "Bank of America", "Dhaka University", "iPhone", "AI", "NASA", "Bangladesh"]) assert.ok(names.includes(n), `missing ${n}: ${names}`);
+  for (const n of ["Moreover", "In Bangladesh", "In"]) assert.ok(!names.includes(n), `ordinary word kept as a name: ${n}`);
+});
+
+test("a brand name that looks like an ordinary word is kept", () => {
+  const r = humanizeLocal("Robust Systems Ltd makes robust tools. Our partner Vibrant Media is vibrant and the work is crucial for everyone involved here today.", { strength: "strong" });
+  assert.ok(r.text.includes("Robust Systems Ltd") && r.text.includes("Vibrant Media"), r.text);
+  assert.ok(!/robust tools|is vibrant/.test(r.text), r.text);
+});
+
+test("the example keeps its names with no locked list", () => {
+  const r = humanizeLocal(EXAMPLE, { strength: "strong" });
+  for (const s of ["Facebook", "TikTok", "Bangladesh", "62%"]) assert.ok(r.text.includes(s), `lost ${s}: ${r.text}`);
+});

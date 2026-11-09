@@ -1,8 +1,8 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { aiScore } from "./detect.js?v=202611090756";
-import { words, spread } from "./text.js?v=202611090756";
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611090756";
+import { aiScore } from "./detect.js?v=202611090805";
+import { words, spread } from "./text.js?v=202611090805";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611090805";
 
 // Private-use characters mark spots in the text while the passes run; none survive to the output.
 const ch = (n) => String.fromCharCode(n);
@@ -78,6 +78,41 @@ export function protect(text, locked = []) {
   for (const re of PROTECT) t = t.replace(re, hold);
   return { text: t, restore: (s) => s.replace(RESTORE, (m, c) => items[c.charCodeAt(0) - 0xe100] ?? m) };
 }
+
+// ---------- Finding names on its own ----------
+// Names, brands and terms are kept without the visitor listing them:
+//  - a word with a capital inside (TikTok, iPhone, YouTube) or in all capitals (AI, NASA)
+//  - a capitalized word in the middle of a sentence (Facebook, Bangladesh)
+//  - two or more capitalized words in a row, also at the start of a sentence (Robust Systems Ltd,
+//    Bank of America, New York)
+// A single capitalized word at the start of a sentence is left to the rules, since it is usually
+// an ordinary word; looksLikeName() below still skips one that is followed by another capital.
+const CAPWORD = "\\p{Lu}[\\p{L}\\p{M}'’&-]*";
+const NAME_RUN = new RegExp(`(?<![\\p{L}\\p{M}])${CAPWORD}(?:[ \\t]+(?:(?:of|the|for|de|van|von|da|bin)[ \\t]+)?${CAPWORD})*`, "gu");
+const INNER_CAP = /^(?:\p{Ll}+\p{Lu}|\p{Lu}[\p{Ll}]*\p{Lu}\p{Ll})|^[\p{Lu}&]{2,}s?$/u;
+export function findNames(text) {
+  const found = new Set();
+  for (const m of text.matchAll(NAME_RUN)) {
+    const run = m[0].replace(/[.'’&-]+$/u, "");
+    const parts = run.split(/[ \t]+/);
+    const atStart = atSentenceStart(text, m.index);
+    if (parts.length >= 2 || !atStart || INNER_CAP.test(run)) {
+      // "In Bangladesh" at the start: keep the name, not the ordinary first word.
+      const caps = parts.filter((w) => /^\p{Lu}/u.test(w)).length;
+      const name = atStart && parts.length >= 2 && caps === 2 && !INNER_CAP.test(parts[0]) && STARTERS_SAFE.has(parts[0].toLowerCase())
+        ? parts.slice(1).join(" ") : run;
+      if (name !== "I" && name.length > 1) found.add(name);
+    }
+  }
+  // camelCase brands with a lower-case first letter: iPhone, eBay
+  for (const m of text.matchAll(/(?<![\p{L}])\p{Ll}+\p{Lu}[\p{L}]*/gu)) found.add(m[0]);
+  return [...found];
+}
+// Ordinary first words that are not part of a name that follows: "In Bangladesh", "The Guardian" stays whole.
+const STARTERS_SAFE = new Set(["in", "on", "at", "for", "from", "by", "with", "about", "after", "before", "during", "since", "like",
+  "moreover", "furthermore", "additionally", "however", "also", "so", "but", "and", "today", "yesterday", "recently", "ultimately",
+  "overall", "notably", "importantly", "consequently", "thus", "firstly", "secondly", "lastly", "indeed", "meanwhile", "therefore",
+  "although", "while", "when", "if", "because", "as", "here", "there", "this", "these", "those", "many", "most", "some", "every", "each"]);
 
 // ---------- Table passes ----------
 const cache = new WeakMap();
@@ -367,9 +402,9 @@ const TARGET = 30;   // stop once the pattern score is at or below this
 
 // One rewrite with one seed: light = phrases and words; medium adds openers, contractions and dashes;
 // strong adds sentence rhythm.
-function runOnce(text, { strength, tone, locked, seed }) {
+function runOnce(text, { strength, tone, locked = [], seed }) {
   const pick = tonePick(makePick(rng(seed)), tone);
-  const p = protect(text, locked);
+  const p = protect(text, [...locked, ...findNames(text)]);
   const level = LEVELS.indexOf(strength);
   const changes = [];
   let t = p.text;
@@ -420,7 +455,7 @@ const EXPAND = new Map(CONTRACTIONS.map(([full, short]) => [short.toLowerCase(),
 const SHORT_RE = new RegExp(`(?<![${L}'’])(${[...EXPAND.keys()].map(esc).join("|")})(?![${L}])`, "iu");
 function variations(sentence, locked, tone) {
   const formal = tone === "formal" || tone === "academic";
-  const p = protect(sentence, locked), t = p.text, out = [];
+  const p = protect(sentence, [...locked, ...findNames(sentence)]), t = p.text, out = [];
   const lead = t.match(/^\s*/)[0], body = t.slice(lead.length);
   for (const group of OPENER_SIBLINGS) {
     const hit = group.find((o) => body.startsWith(o + " "));

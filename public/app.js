@@ -1,10 +1,10 @@
-import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611090756";
-import { humanizeLocal, sentenceOptionsLocal } from "./rules.js?v=202611090756";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611090756";
-import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611090756";
-import { readTextFile, ACCEPT } from "./files.js?v=202611090756";
-import { makeDocx } from "./docx-export.js?v=202611090756";
-import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611090756";
+import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611090805";
+import { humanizeLocal, sentenceOptionsLocal, findNames } from "./rules.js?v=202611090805";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611090805";
+import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611090805";
+import { readTextFile, ACCEPT } from "./files.js?v=202611090805";
+import { makeDocx } from "./docx-export.js?v=202611090805";
+import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611090805";
 
 const $ = (id) => document.getElementById(id);
 const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
@@ -12,7 +12,7 @@ const status = $("status"), goBtn = $("go"), againBtn = $("again"), stopBtn = $(
 
 const EXAMPLE_IN = "In today's fast-paced world, social media plays a vital role in shaping how young people communicate. Moreover, it is important to note that platforms like Facebook and TikTok have fundamentally transformed the landscape of friendship. Furthermore, studies show that 62% of teenagers in Bangladesh use social media for more than 3 hours a day. In conclusion, social media is a double-edged sword that offers both opportunities and challenges.";
 // The example result is the Quick engine's real output, so it shows what visitors will get.
-const EXAMPLE_RUN = humanizeLocal(EXAMPLE_IN, { locked: ["Facebook", "TikTok", "Bangladesh"] });
+const EXAMPLE_RUN = humanizeLocal(EXAMPLE_IN);
 
 // Counts the engine's changes by kind, for the report and history.
 function summarize(changes) {
@@ -69,6 +69,7 @@ function setEngine(e) {
   setSeg("engine", engine);
   wordLimit = engine === "ai" ? serverLimit : QUICK_WORD_LIMIT;
   document.querySelectorAll(".ai-only").forEach((el) => { el.hidden = engine !== "ai"; });
+  if (engine !== "ai") { $("opts").hidden = true; $("opt-toggle").setAttribute("aria-expanded", "false"); }
   $("strength").querySelectorAll("button[data-v]").forEach((b) => { b.dataset.desc = b.title = MODE_DESC[engine][b.dataset.v]; });
   showModeDesc();
   syncInput();
@@ -108,20 +109,19 @@ function countTo(el, value) {
   requestAnimationFrame(step);
 }
 
-const lockedTerms = () => $("locked").value.split(",").map((s) => s.trim()).filter(Boolean);
+// Names, brands and terms are found in the text itself; there is no list to fill in.
+const lockedTerms = (text = $("input").value) => findNames(text).slice(0, 30);
 
 // Mode description under the toolbar, and the locked-words panel
 const showModeDesc = () => { $("mode-desc").textContent = $("strength").querySelector('[aria-pressed="true"]').dataset.desc || ""; };
 $("strength").addEventListener("click", showModeDesc);
-const showLockCount = () => { $("lock-count").textContent = String(lockedTerms().length); };
-$("locked").addEventListener("input", showLockCount);
 const showSampleCount = () => { $("sample-count").textContent = `${$("sample").value.length} / ${$("sample").maxLength}`; };
 $("sample").addEventListener("input", showSampleCount);
 $("opt-toggle").addEventListener("click", () => {
   const open = $("opt-toggle").getAttribute("aria-expanded") !== "true";
   $("opt-toggle").setAttribute("aria-expanded", String(open));
   $("opts").hidden = !open;
-  if (open) $("locked").focus();
+  if (open) $("sample").focus();
 });
 
 // ---------- Input, highlight, word counter ----------
@@ -137,7 +137,6 @@ function syncInput() {
 }
 input.addEventListener("input", () => { syncInput(); renderChecks(); });
 input.addEventListener("scroll", () => { backdropInner.style.transform = `translateY(${-input.scrollTop}px)`; });
-$("locked").addEventListener("input", renderChecks);
 $("clear").addEventListener("click", () => { input.value = ""; syncInput(); renderChecks(); input.focus(); });
 
 function setBadge(el, r) {
@@ -236,8 +235,8 @@ function renderChecks() {
   setPill("a-pill", left === 0 ? "ok" : left <= 2 ? "warn" : "bad", left === 0 ? "Clean" : `${left} left`);
   $("a-chips").replaceChildren(...[...outAI.entries()].map(([k, c]) => chip(c > 1 ? `${k} ×${c}` : k)));
 
-  // Numbers and locked words: only the missing ones are shown
-  const items = [...numbersIn(src), ...lockedTerms().filter((t) => src.toLowerCase().includes(t.toLowerCase()))];
+  // Numbers and names found in the text: only the missing ones are shown
+  const items = [...numbersIn(src), ...lockedTerms(src).filter((t) => src.toLowerCase().includes(t.toLowerCase()))];
   const missing = items.filter((t) => !out.toLowerCase().includes(t.toLowerCase()));
   if (!items.length) { $("f-num").textContent = "—"; $("f-unit").textContent = ""; setPill("f-pill", "idle", "None to check"); }
   else {
@@ -395,7 +394,7 @@ async function openAlt(span) {
   altCtl = new AbortController();
   const signal = altCtl.signal;
   try {
-    const options = await fetchAlternatives({ sentence, context: v.text, tone: $("tone").value, lang: $("lang").value, locked: lockedTerms() }, signal, usesQuick(v));
+    const options = await fetchAlternatives({ sentence, context: v.text, tone: $("tone").value, lang: $("lang").value, locked: lockedTerms(v.text) }, signal, usesQuick(v));
     if (signal.aborted) return;
     altBody.replaceChildren(...options.map((o) => {
       const b = document.createElement("button"); b.type = "button"; b.className = "alt-opt"; b.textContent = o;
@@ -649,8 +648,7 @@ function restore(h) {
   input.value = h.source; syncInput();
   if (h.settings) {
     $("tone").value = h.settings.tone || "natural"; $("lang").value = h.settings.lang || "same"; $("purpose").value = h.settings.purpose || "general"; $("sample").value = h.settings.sample || ""; showSampleCount(); setSeg("strength", h.settings.strength);
-    if (h.settings.locked) $("locked").value = h.settings.locked.join(", ");
-    showModeDesc(); showLockCount();
+    showModeDesc();
   }
   setSeg("versions", String(Math.min(3, Math.max(1, h.versions.length))));
   // Entries saved before Quick mode existed were AI rewrites.
@@ -681,7 +679,7 @@ $("history-clear").addEventListener("click", (e) => {
 
 // ---------- Boot with the example loaded ----------
 input.value = EXAMPLE_IN;
-showModeDesc(); showLockCount();
+showModeDesc();
 syncInput();
 moveThumbs();
 requestAnimationFrame(() => requestAnimationFrame(() => segs.forEach((s) => s.classList.remove("no-anim"))));
