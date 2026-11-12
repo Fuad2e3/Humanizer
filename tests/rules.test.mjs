@@ -451,3 +451,8 @@ test("a phrase replaced with a comma ending never leaves a double comma", () => 
     assert.ok(!/,\s*,/.test(r.text), r.text);
   }
 });
+
+test("a join never says 'also' twice in one sentence", () => {
+  const t = "Also, breaking larger projects into smaller steps can help prevent procrastination. It's also essential to minimize distractions to maintain focus.";
+  assert.ok(!/also[^.]*also/i.test(mergeLinked(t).text), mergeLinked(t).text);
+});

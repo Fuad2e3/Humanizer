@@ -1,8 +1,8 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { aiScore } from "./detect.js?v=202611120845";
-import { words, spread } from "./text.js?v=202611120845";
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611120845";
+import { aiScore } from "./detect.js?v=202611120847";
+import { words, spread } from "./text.js?v=202611120847";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611120847";
 
 // Private-use characters mark spots in the text while the passes run; none survive to the output.
 const ch = (n) => String.fromCharCode(n);
@@ -467,6 +467,8 @@ export function mergeLinked(text, tone = "natural") {
       // No second "and" after a list's ", and", no second "but", and never after "not only".
       if ((link[1] === "and" && /,\s+and\s/i.test(cur)) || (link[1] === "but" && /\bbut\b/i.test(cur)) || /\bnot only\b/i.test(cur)) continue;
       const rest = next.replace(link[0], "");
+      // "Also, X, and it's also Y" says "also" twice in one sentence.
+      if (/^\s*(?:also|plus|in addition)\b/i.test(cur) && /\balso\b/i.test(rest)) continue;
       const a = words(cur), b = words(rest);
       if (a < 5 || b < 4 || a + b > 42) continue;
       // The first word loses its capital, so it must clearly be an ordinary word, never a name.
