@@ -4,14 +4,14 @@
 import { humanizeLocal } from "../public/rules.js";
 import { aiScore } from "../public/detect.js";
 import { findAI } from "../public/text.js";
-import { AI_TEXTS, AI_TEXTS_BN, HUMAN_TEXTS } from "../tests/bench/corpus.mjs";
+import { AI_TEXTS, AI_TEXTS_BN, AI_TEXTS_GENRES, AI_TEXTS_UNSEEN, HUMAN_TEXTS } from "../tests/bench/corpus.mjs";
 
 const avg = (a) => Math.round(a.reduce((x, y) => x + y, 0) / a.length);
 const SEEDS = [1, 2, 3];
 
 export function bench({ verbose = false } = {}) {
   const out = {};
-  for (const [name, set] of [["English", AI_TEXTS], ["Bangla", AI_TEXTS_BN]]) {
+  for (const [name, set] of [["English", AI_TEXTS], ["Genres", AI_TEXTS_GENRES], ["Unseen", AI_TEXTS_UNSEEN], ["Bangla", AI_TEXTS_BN]]) {
     for (const strength of ["light", "medium", "strong"]) {
       const before = [], after = [], signals = new Map(), left = new Map();
       for (const t of set) for (const seed of SEEDS) {

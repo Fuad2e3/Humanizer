@@ -34,9 +34,9 @@ No hidden characters, look-alike letters or deliberate typos are ever added. Det
 
 ### Measuring the Quick engine
 
-`npm run bench` runs the engine over 16 typical AI-written English paragraphs, 3 Bangla ones and 3 human-written texts (in `tests/bench/corpus.mjs`). It prints the average pattern score before and after for each mode, the signals still left, and how much human text changed. The test suite fails if Deep mode averages above 18 for English or 10 for Bangla, or if human text changes by more than 5%. Use it to check that a new rule really helps before keeping it.
+`npm run bench` runs the engine over 16 typical AI-written English paragraphs, 12 in other genres (emails, product copy, cover letters, reviews, how-tos), 6 unseen ones that no rule was written from, 3 Bangla ones and 3 human-written texts (in `tests/bench/corpus.mjs`). It prints the average pattern score before and after for each mode, the signals still left, and how much human text changed. The test suite fails if Deep mode averages above 18 for English or 10 for Bangla, or if human text changes by more than 5%. Use it to check that a new rule really helps before keeping it.
 
-Current results: English 63 → 16 (Deep) and 17 (Balanced); Bangla 73 → 7; human text at most 3% changed.
+Current results (Deep): English 63 → 16, other genres 69 → 18, unseen 53 → 14, Bangla 73 → 7; human text at most 3% changed. Keep the unseen set unseen: write rules from the other sets, and use it only to check that they carry over.
 
 ## Where to run it
 
