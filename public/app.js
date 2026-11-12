@@ -1,16 +1,16 @@
-import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611120800";
-import { humanizeLocal, sentenceOptionsLocal, findNames } from "./rules.js?v=202611120800";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611120800";
-import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611120800";
-import { readTextFile, ACCEPT } from "./files.js?v=202611120800";
-import { makeDocx } from "./docx-export.js?v=202611120800";
-import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611120800";
+import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611120820";
+import { humanizeLocal, sentenceOptionsLocal, findNames } from "./rules.js?v=202611120820";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611120820";
+import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611120820";
+import { readTextFile, ACCEPT } from "./files.js?v=202611120820";
+import { makeDocx } from "./docx-export.js?v=202611120820";
+import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611120820";
 
 const $ = (id) => document.getElementById(id);
 const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
 const status = $("status"), goBtn = $("go"), againBtn = $("again"), stopBtn = $("stop");
 
-const EXAMPLE_IN = "In today's fast-paced world, social media plays a vital role in shaping how young people communicate. Moreover, it is important to note that platforms like Facebook and TikTok have fundamentally transformed the landscape of friendship. Furthermore, studies show that 62% of teenagers in Bangladesh use social media for more than 3 hours a day. In conclusion, social media is a double-edged sword that offers both opportunities and challenges.";
+const EXAMPLE_IN = "In today's fast-paced world, social media plays a vital role in shaping how young people communicate. Moreover, it is important to note that platforms like Facebook and TikTok have fundamentally transformed the landscape of friendship. Furthermore, studies show that 62% of teenagers around the world use social media for more than 3 hours a day. In conclusion, social media is a double-edged sword that offers both opportunities and challenges.";
 // The example result is the Quick engine's real output, so it shows what visitors will get.
 const EXAMPLE_RUN = humanizeLocal(EXAMPLE_IN);
 

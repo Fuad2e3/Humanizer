@@ -29,7 +29,9 @@ No hidden characters, look-alike letters or deliberate typos are ever added. Det
 
 ### Before launch
 
-- **Pricing:** Pro and Team show a "Coming soon" button. Payments and user accounts are not built yet. Prices are in US dollars; change them in `public/pricing.html`.
+- **Pricing:** the site is free. The Pricing page shows the Free plan and a planned Pro plan with no price. Payments and user accounts are not built yet.
+- **Legal pages:** `privacy.html` and `terms.html` describe the site as it runs today (Quick mode only, no cookies, hosted on GitHub Pages). Update them before adding AI mode, analytics or payments, and have them checked by a lawyer before charging anyone.
+- **Fonts:** Geist is served from `public/fonts/` (SIL Open Font License, in `public/fonts/OFL.txt`), so no visitor data goes to a font host.
 - **Your own domain:** the canonical links, share tags, `robots.txt` and `sitemap.xml` point to `https://fuad2e3.github.io/Humanizer/public/`. When you move to your own domain, replace that address in `public/*.html`, `public/robots.txt` and `public/sitemap.xml`.
 
 ### Measuring the Quick engine

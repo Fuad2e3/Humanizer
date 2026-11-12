@@ -11,7 +11,7 @@ import sentence from "./api/sentence.js";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(here, "public");
 const PORT = Number(process.env.PORT || 3000);
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".png": "image/png", ".xml": "application/xml", ".txt": "text/plain", ".css": "text/css", ".svg": "image/svg+xml", ".ico": "image/x-icon" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".png": "image/png", ".xml": "application/xml", ".txt": "text/plain", ".css": "text/css", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".woff2": "font/woff2" };
 const routes = { "/api/rewrite": rewrite, "/api/check": check, "/api/health": health, "/api/sentence": sentence };
 
 async function readJson(req) {
