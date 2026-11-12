@@ -444,3 +444,10 @@ test("'optimal' keeps the sentence grammatical", () => {
   assert.equal(swapWords("Water matters for optimal bodily function.", first).text, "Water matters for ideal bodily function.");
   assert.equal(swapWords("Pick the optimal route.", first).text, "Pick the best route.");
 });
+
+test("a phrase replaced with a comma ending never leaves a double comma", () => {
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const r = humanizeLocal("মোবাইল ফোন আমাদের জীবনে অনেক কাজে লাগে এবং আমরা সহজেই যোগাযোগ করতে পারি। তবে অতিরিক্ত ব্যবহার আমাদের স্বাস্থ্যের জন্য ক্ষতিকর হতে পারে এবং এটা মনে রাখা দরকার। পরিশেষে বলা যায় যে, সঠিক ব্যবহারই মোবাইল ফোনকে আশীর্বাদে পরিণত করে এবং জীবনকে সহজ করে তোলে।", { strength: "strong", seed });
+    assert.ok(!/,\s*,/.test(r.text), r.text);
+  }
+});

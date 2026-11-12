@@ -1,10 +1,10 @@
-import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611120820";
-import { humanizeLocal, sentenceOptionsLocal, findNames } from "./rules.js?v=202611120820";
-import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611120820";
-import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611120820";
-import { readTextFile, ACCEPT } from "./files.js?v=202611120820";
-import { makeDocx } from "./docx-export.js?v=202611120820";
-import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611120820";
+import { FREE_WORD_LIMIT, QUICK_WORD_LIMIT } from "./core.js?v=202611120845";
+import { humanizeLocal, sentenceOptionsLocal, findNames } from "./rules.js?v=202611120845";
+import { markAI, findAI, words, sentences, numbersIn, diffHTML, html, sentenceRanges } from "./text.js?v=202611120845";
+import { aiScore, MIN_WORDS, shouldRetry } from "./detect.js?v=202611120845";
+import { readTextFile, ACCEPT } from "./files.js?v=202611120845";
+import { makeDocx } from "./docx-export.js?v=202611120845";
+import { loadHistory, addHistory, removeHistory, clearHistory } from "./history.js?v=202611120845";
 
 const $ = (id) => document.getElementById(id);
 const input = $("input"), output = $("output"), backdropInner = $("backdrop-inner");
@@ -699,6 +699,36 @@ $("history-clear").addEventListener("click", (e) => {
   renderHistory(clearHistory());
 });
 
+
+// ---------- Samples below the tool: real Quick engine output, made on page load ----------
+const SAMPLES = [
+  { label: "Email", text: "I hope this email finds you well. I am writing to follow up on our recent conversation regarding the upcoming product launch. As discussed, it is crucial that we align on the key milestones before the end of the month. Additionally, I would like to schedule a meeting to review the marketing strategy in detail. Please let me know your availability at your earliest convenience." },
+  { label: "Essay", text: "Remote work has fundamentally transformed the way organizations operate in the modern era. Employees can now collaborate seamlessly from anywhere in the world. Furthermore, this flexibility offers numerous advantages, including reduced commuting time and improved work-life balance. However, it is important to note that remote work also presents unique challenges. In conclusion, organizations must strike a balance between flexibility and connection." },
+  { label: "বাংলা", lang: "bn", text: "বর্তমান যুগে মোবাইল ফোন আমাদের দৈনন্দিন জীবনে অপরিহার্য হয়ে উঠেছে। এর মাধ্যমে আমরা সহজেই যোগাযোগ করতে পারি এবং বিভিন্ন তথ্য জানতে পারি। তাছাড়া শিক্ষা ও ব্যবসার বিভিন্ন ক্ষেত্রে মোবাইল ফোন গুরুত্বপূর্ণ ভূমিকা পালন করে। তবে অতিরিক্ত ব্যবহার আমাদের স্বাস্থ্যের জন্য ক্ষতিকর হতে পারে। পরিশেষে বলা যায় যে, সঠিক ব্যবহারই মোবাইল ফোনকে আশীর্বাদে পরিণত করে।" }
+];
+
+function renderSamples() {
+  const box = $("samples");
+  if (!box) return;
+  box.replaceChildren(...SAMPLES.map((s) => {
+    const run = humanizeLocal(s.text, { strength: "strong", seed: 1 });
+    const before = aiScore(s.text), after = aiScore(run.text);
+    const card = document.createElement("article");
+    card.className = "sample";
+    if (s.lang) card.lang = s.lang;
+    const score = (r) => (r ? `<span class="ai-badge ${r.tone}">AI ${r.score}%</span>` : "");
+    card.innerHTML = `<div class="sample-head"><h3>${html(s.label)}</h3><button type="button" class="link-btn sample-try">Try this text</button></div>
+      <div class="sample-side"><div class="sample-label"><span>Before</span>${score(before)}</div><p>${markAI(s.text)}</p></div>
+      <div class="sample-side after"><div class="sample-label"><span>After</span>${score(after)}</div><p>${html(run.text)}</p></div>`;
+    card.querySelector(".sample-try").addEventListener("click", () => {
+      input.value = s.text; syncInput(); syncExample(); renderChecks();
+      document.getElementById("top").scrollIntoView({ behavior: "smooth" });
+      input.focus({ preventScroll: true });
+    });
+    return card;
+  }));
+}
+
 // ---------- Boot with the example loaded ----------
 input.value = EXAMPLE_IN;
 showModeDesc();
@@ -708,5 +738,6 @@ requestAnimationFrame(() => requestAnimationFrame(() => segs.forEach((s) => s.cl
 document.fonts?.ready.then(moveThumbs);
 renderAll();
 renderHistory();
+renderSamples();
 setEngine("quick");
 detectServer();

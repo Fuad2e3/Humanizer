@@ -23,7 +23,7 @@
 <meta name="theme-color" content="#FAFAFA" media="(prefers-color-scheme: light)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%237C5CFF'/%3E%3Cpath d='M9 22V10l7 7 7-7v12' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=202611120820">
+<link rel="stylesheet" href="styles.css?v=202611120845">
 </head>
 <body>
 
@@ -217,6 +217,52 @@
   </div>
 </section>
 
+<section class="home" aria-label="About Humanizer">
+  <div class="home-block">
+    <div class="home-head">
+      <h2>See it on real text</h2>
+      <p>Each result below is made live by the same Quick engine in your browser, nothing prepared by hand.</p>
+    </div>
+    <div class="samples" id="samples"></div>
+  </div>
+
+  <div class="home-block">
+    <div class="home-head"><h2>Who it's for</h2></div>
+    <div class="uses">
+      <div class="use">
+        <h3>Writers working in a second language</h3>
+        <p>Turn stiff, textbook English into plainer sentences that read the way people talk. Works on Bangla too.</p>
+      </div>
+      <div class="use">
+        <h3>Marketers and support teams</h3>
+        <p>Strip stock phrases like "in today's fast-paced world" out of drafts, emails and product copy before they go out.</p>
+      </div>
+      <div class="use">
+        <h3>Students</h3>
+        <p>Make a draft sound like you. Check your school's rules first: many ask you to say when you used AI tools.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-block private">
+    <div class="private-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    <div class="private-text">
+      <h2>Your text never leaves your device</h2>
+      <p>Quick mode runs entirely in your browser. No account, no cookies, no upload. Files are read on your device and your history stays in your browser.</p>
+    </div>
+    <a class="btn" href="privacy.html">Read the privacy policy</a>
+  </div>
+
+  <div class="home-block">
+    <div class="home-head"><h2>What the score means</h2></div>
+    <div class="score-facts">
+      <p><b>It measures patterns.</b> Stock phrases, sentences of the same length, missing contractions, filler openers and repeated words. Lower means fewer of them.</p>
+      <p><b>It is not a detector.</b> GPTZero, Turnitin and others use their own methods and can score the same text differently. No tool can promise what they will say.</p>
+      <p><b>Read the result.</b> Quick mode changes wording and rhythm, not ideas. Check every rewrite before you use it. <a href="faq.html">More in the FAQ</a></p>
+    </div>
+  </div>
+</section>
+
 <footer class="site-foot">
   <div class="site-foot-in">
     <div class="foot-brand">
@@ -248,6 +294,6 @@
 
 <div class="toast" id="status" role="status" aria-live="polite"></div>
 
-<script type="module" src="app.js?v=202611120820"></script>
+<script type="module" src="app.js?v=202611120845"></script>
 </body>
 </html>

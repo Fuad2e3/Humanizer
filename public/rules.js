@@ -1,8 +1,8 @@
 // Local humanize engine: fixed rules that run in the browser, with no AI and no network.
 // Each pass takes text and returns { text, changes: [{ type, from, to }] }.
-import { aiScore } from "./detect.js?v=202611120820";
-import { words, spread } from "./text.js?v=202611120820";
-import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611120820";
+import { aiScore } from "./detect.js?v=202611120845";
+import { words, spread } from "./text.js?v=202611120845";
+import { PHRASES, WORDY, WORDS, OPENERS, CONTRACTIONS, BN_PHRASES, SIBLINGS, OPENER_SIBLINGS, CASUAL } from "./rules-data.js?v=202611120845";
 
 // Private-use characters mark spots in the text while the passes run; none survive to the output.
 const ch = (n) => String.fromCharCode(n);
@@ -175,7 +175,11 @@ function applyTable(text, rows, pick, type) {
 }
 
 const ALL_PHRASES = [...PHRASES, ...BN_PHRASES];
-export const replacePhrases = (text, pick) => applyTable(text, ALL_PHRASES, pick, "phrase");
+// A replacement that ends in a comma, placed before the comma the writer already had, would leave ",,".
+export const replacePhrases = (text, pick) => {
+  const r = applyTable(text, ALL_PHRASES, pick, "phrase");
+  return { ...r, text: r.text.replace(/,(?:[ \t]*,)+/g, ",") };
+};
 
 export function swapWords(text, pick) {
   const a = applyTable(text, WORDY, pick, "wordy");
